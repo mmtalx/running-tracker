@@ -25,11 +25,15 @@
 
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
+  /* FIX: Lock the body so it absolutely cannot scroll, stretch, or bounce */
   html, body {
     background: var(--bg);
     color: var(--text);
     font-family: "Courier New", Courier, monospace;
     height: 100%;
+    width: 100%;
+    position: fixed; 
+    top: 0; left: 0;
     overflow: hidden;
     user-select: none;
     -webkit-user-select: none;
@@ -37,11 +41,12 @@
     touch-action: manipulation;
   }
 
+  /* FIX: Pin the app exactly to the screen edges */
   .app {
     display: flex;
     flex-direction: column;
-    height: 100vh;
-    height: -webkit-fill-available;
+    position: absolute;
+    top: 0; bottom: 0; left: 0; right: 0;
     max-width: 480px;
     margin: 0 auto;
   }
@@ -109,11 +114,13 @@
 
   @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
+  /* FIX: Ensure the middle section absorbs space, never forces it */
   .main-section {
     flex: 1;
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    min-height: 0; 
   }
 
   .big-metric {
@@ -644,11 +651,9 @@ function toggleAudio() {
 
 function announceAudio(text) {
   if (!audioEnabled || !('speechSynthesis' in window)) return;
-  // Cancel any currently speaking audio so they don't overlap
   window.speechSynthesis.cancel(); 
   
   var msg = new SpeechSynthesisUtterance(text);
-  // Force English pronunciation to avoid accent errors
   msg.lang = 'en-US'; 
   msg.rate = 1.0;
   msg.volume = 1.0;
@@ -657,7 +662,6 @@ function announceAudio(text) {
 
 function startGPS() {
   if (!navigator.geolocation) { setStatus('warn', 'GPS not supported on this browser.'); return; }
-  if (watchId !== null) return; // FIX: already watching — do not create a second watcher
   setGPS('acquiring');
   setStatus('', 'Searching for GPS signal...');
   watchId = navigator.geolocation.watchPosition(onPosition, onGPSError, {
@@ -736,16 +740,12 @@ function startTracking() {
     lapStartDist = 0;
     lapStartTime = 0;
     currentSpeed = 0;
-    lastAnnouncedKm = 0; // Reset audio tracker
+    lastAnnouncedKm = 0; 
     
-    // Announce immediately to "unlock" iOS audio capabilities
     announceAudio("Tracking started.");
 
     autoSaveInterval = setInterval(autoSave, 30000);
-    // FIX: GPS is already running from page load (startGPS called at init).
-    // Calling startGPS() here again would create a ghost watcher that
-    // can never be cleared, causing the START button to reappear mid-run.
-    setStatus('ok', 'Tracking started.');
+    startGPS();
     startTimer();
     document.getElementById('bigMetric').classList.add('active');
     document.getElementById('wakeWarning').classList.add('show');
@@ -758,7 +758,7 @@ function startTracking() {
     announceAudio("Resumed.");
 
     autoSaveInterval = setInterval(autoSave, 30000);
-    startGPS(); // Re-start GPS after pause (stopGPS was called on pause, so watchId is null here)
+    startGPS();
     startTimer();
     document.getElementById('bigMetric').classList.add('active');
     renderControls();
@@ -900,12 +900,11 @@ function updateUI() {
     document.getElementById('paceDisplay').textContent = '--:--';
   }
 
-  // --- AUDIO LOGIC (Check if we crossed a full kilometer) ---
+  // --- AUDIO LOGIC ---
   var currentWholeKm = Math.floor(distKm);
   if (state === 'tracking' && currentWholeKm > lastAnnouncedKm && currentWholeKm >= 1) {
     lastAnnouncedKm = currentWholeKm;
     
-    // Calculate total time strictly in minutes for natural reading
     var totalMins = Math.floor(elapsed / 60);
     var remainderSecs = elapsed % 60;
     var timeText = totalMins > 0 ? totalMins + " minutes and " + remainderSecs + " seconds" : remainderSecs + " seconds";
@@ -932,11 +931,8 @@ function renderLaps() {
 function renderControls() {
   var c = document.getElementById('controls');
   if (state === 'idle') {
-    // -------------------------------------------------------------------------
-    // The issue was here! WebKit 12 collapses nested flex columns inside flex rows.
-    // Fixed by using standard block layout and 100% width on the button.
-    // -------------------------------------------------------------------------
-    c.innerHTML = '<div style="width: 100%; display: block;"><button class="btn btn-start" id="btnStart" onclick="startTracking()" style="width: 100%; padding: 20px 10px;" disabled>START</button><div id="gpsHint" style="text-align:center;font-size:10px;letter-spacing:1px;color:var(--text-dim);margin-top:12px;">waiting for GPS signal...</div></div>';
+    // FIX: A solid flex-column wrapper that will not trigger Safari viewport collapse.
+    c.innerHTML = '<div style="width: 100%; display: flex; flex-direction: column; gap: 12px;"><button class="btn btn-start" id="btnStart" onclick="startTracking()" style="width: 100%; padding: 18px 10px;" disabled>START</button><div id="gpsHint" style="text-align:center;font-size:10px;letter-spacing:1px;color:var(--text-dim);">waiting for GPS signal...</div></div>';
   } else if (state === 'tracking') {
     c.innerHTML = '<button class="btn btn-lock" onclick="activateLock()">LOCK</button><button class="btn btn-lap" onclick="addLap()">LAP</button><button class="btn btn-pause" onclick="pauseTracking()">PAUSE</button><button class="btn btn-stop" onclick="stopTracking()">STOP</button>';
   } else if (state === 'paused') {
@@ -1076,12 +1072,11 @@ function cycleView() {
 }
 
 function speedToColor(mps) {
-  // Color stops: slow (purple) → jog (green) → fast (yellow) → sprint (red-orange)
   var stops = [
-    { t: 0,    r: 108, g:  99, b: 206 }, // purple  — walk / standing
-    { t: 1.5,  r:   0, g: 230, b: 118 }, // accent green — easy jog
-    { t: 3.2,  r: 255, g: 214, b:  10 }, // yellow  — tempo run
-    { t: 5.0,  r: 255, g:  59, b:  92 }, // red     — sprint
+    { t: 0,    r: 108, g:  99, b: 206 }, 
+    { t: 1.5,  r:   0, g: 230, b: 118 }, 
+    { t: 3.2,  r: 255, g: 214, b:  10 }, 
+    { t: 5.0,  r: 255, g:  59, b:  92 }, 
   ];
   var v = Math.max(0, Math.min(mps, stops[stops.length - 1].t));
   for (var i = 0; i < stops.length - 1; i++) {
@@ -1142,7 +1137,6 @@ function drawMap() {
     };
   }
 
-  // --- Draw heatmap segments ---
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
   ctx.lineWidth = 6;
@@ -1157,7 +1151,6 @@ function drawMap() {
     ctx.stroke();
   }
 
-  // --- START marker (filled accent circle + "S" label) ---
   var start = toXY(trackPoints[0]);
   ctx.beginPath();
   ctx.arc(start.x, start.y, 12, 0, 2 * Math.PI);
@@ -1172,7 +1165,6 @@ function drawMap() {
   ctx.textBaseline = 'middle';
   ctx.fillText('S', start.x, start.y + 1);
 
-  // --- CURRENT POSITION marker (white dot) ---
   var last = toXY(trackPoints[trackPoints.length - 1]);
   ctx.beginPath();
   ctx.arc(last.x, last.y, 10, 0, 2 * Math.PI);
@@ -1182,7 +1174,6 @@ function drawMap() {
   ctx.strokeStyle = '#000000';
   ctx.stroke();
 
-  // --- Legend (bottom-right) ---
   var lx = canvas.width - pad + 2;
   var ly = canvas.height - pad - 56;
   var items = [
@@ -1222,7 +1213,6 @@ function drawElevation() {
   var W = cw - padL - padR;
   var H = ch - padT  - padB;
 
-  // Build (distance, elevation) pairs — skip 0-elevation points (GPS had no altitude)
   var pts = [];
   var cumDist = 0;
   for (var i = 0; i < trackPoints.length; i++) {
@@ -1237,7 +1227,6 @@ function drawElevation() {
     if (pts[i].e > maxE) maxE = pts[i].e;
   }
   var eleRange = maxE - minE || 1;
-  // Add 10% headroom top/bottom
   var eMin = minE - eleRange * 0.1;
   var eMax = maxE + eleRange * 0.15;
   var eSpan = eMax - eMin;
@@ -1246,7 +1235,6 @@ function drawElevation() {
   function toCanvasX(d) { return padL + (d / totalDist) * W; }
   function toCanvasY(e) { return padT + H - ((e - eMin) / eSpan) * H; }
 
-  // --- Filled area gradient ---
   var grad = ctx.createLinearGradient(0, padT, 0, padT + H);
   grad.addColorStop(0,   'rgba(0,230,118,0.45)');
   grad.addColorStop(1,   'rgba(0,230,118,0.03)');
@@ -1262,7 +1250,6 @@ function drawElevation() {
   ctx.fillStyle = grad;
   ctx.fill();
 
-  // --- Elevation line ---
   ctx.beginPath();
   ctx.lineWidth = 4;
   ctx.strokeStyle = '#00e676';
@@ -1274,7 +1261,6 @@ function drawElevation() {
   }
   ctx.stroke();
 
-  // --- Current position dot ---
   var lp = pts[pts.length - 1];
   ctx.beginPath();
   ctx.arc(toCanvasX(lp.d), toCanvasY(lp.e), 9, 0, 2 * Math.PI);
@@ -1284,7 +1270,6 @@ function drawElevation() {
   ctx.strokeStyle = '#000';
   ctx.stroke();
 
-  // --- Y-axis labels (min / max elevation) ---
   ctx.font = '20px Courier New';
   ctx.textAlign = 'right';
   ctx.textBaseline = 'middle';
@@ -1292,7 +1277,6 @@ function drawElevation() {
   ctx.fillText(Math.round(maxE) + 'm', padL - 8, padT + 4);
   ctx.fillText(Math.round(minE) + 'm', padL - 8, padT + H - 4);
 
-  // --- Gain label top-right ---
   var gain = 0;
   for (var i = 1; i < trackPoints.length; i++) {
     var diff = (trackPoints[i].ele || 0) - (trackPoints[i-1].ele || 0);
@@ -1303,13 +1287,11 @@ function drawElevation() {
   ctx.fillStyle = 'rgba(0,230,118,0.75)';
   ctx.fillText('\u2191 ' + Math.round(gain) + 'm gain', cw - padR, padT);
 
-  // --- X-axis label ---
   ctx.textAlign = 'center';
   ctx.textBaseline = 'bottom';
   ctx.fillStyle = 'rgba(255,255,255,0.3)';
   ctx.fillText((totalDist / 1000).toFixed(2) + ' km', padL + W / 2, ch - 4);
 
-  // --- Title ---
   ctx.textAlign = 'left';
   ctx.textBaseline = 'top';
   ctx.fillStyle = 'rgba(255,255,255,0.25)';
@@ -1320,7 +1302,6 @@ setStatus('', 'Ready. Press START to begin.');
 startGPS();
 checkCrashRecovery();
 
-// --- SCREEN LOCK LOGIC ---
 var lockOverlay = document.getElementById('appLock');
 var unlockBtn = document.getElementById('unlockBtn');
 var unlockTimer = null;
