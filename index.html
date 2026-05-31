@@ -928,7 +928,11 @@ function renderLaps() {
 function renderControls() {
   var c = document.getElementById('controls');
   if (state === 'idle') {
-    c.innerHTML = '<div style="flex:1;display:flex;flex-direction:column;gap:8px;"><button class="btn btn-start" id="btnStart" onclick="startTracking()" disabled>START</button><div id="gpsHint" style="text-align:center;font-size:10px;letter-spacing:1px;color:var(--text-dim);">waiting for GPS signal...</div></div>';
+    // -------------------------------------------------------------------------
+    // The issue was here! WebKit 12 collapses nested flex columns inside flex rows.
+    // Fixed by using standard block layout and 100% width on the button.
+    // -------------------------------------------------------------------------
+    c.innerHTML = '<div style="width: 100%; display: block;"><button class="btn btn-start" id="btnStart" onclick="startTracking()" style="width: 100%; padding: 20px 10px;" disabled>START</button><div id="gpsHint" style="text-align:center;font-size:10px;letter-spacing:1px;color:var(--text-dim);margin-top:12px;">waiting for GPS signal...</div></div>';
   } else if (state === 'tracking') {
     c.innerHTML = '<button class="btn btn-lock" onclick="activateLock()">LOCK</button><button class="btn btn-lap" onclick="addLap()">LAP</button><button class="btn btn-pause" onclick="pauseTracking()">PAUSE</button><button class="btn btn-stop" onclick="stopTracking()">STOP</button>';
   } else if (state === 'paused') {
