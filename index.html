@@ -657,6 +657,7 @@ function announceAudio(text) {
 
 function startGPS() {
   if (!navigator.geolocation) { setStatus('warn', 'GPS not supported on this browser.'); return; }
+  if (watchId !== null) return; // FIX: already watching — do not create a second watcher
   setGPS('acquiring');
   setStatus('', 'Searching for GPS signal...');
   watchId = navigator.geolocation.watchPosition(onPosition, onGPSError, {
@@ -741,7 +742,10 @@ function startTracking() {
     announceAudio("Tracking started.");
 
     autoSaveInterval = setInterval(autoSave, 30000);
-    startGPS();
+    // FIX: GPS is already running from page load (startGPS called at init).
+    // Calling startGPS() here again would create a ghost watcher that
+    // can never be cleared, causing the START button to reappear mid-run.
+    setStatus('ok', 'Tracking started.');
     startTimer();
     document.getElementById('bigMetric').classList.add('active');
     document.getElementById('wakeWarning').classList.add('show');
@@ -754,7 +758,7 @@ function startTracking() {
     announceAudio("Resumed.");
 
     autoSaveInterval = setInterval(autoSave, 30000);
-    startGPS();
+    startGPS(); // Re-start GPS after pause (stopGPS was called on pause, so watchId is null here)
     startTimer();
     document.getElementById('bigMetric').classList.add('active');
     renderControls();
