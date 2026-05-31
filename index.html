@@ -1107,6 +1107,8 @@ function drawMap() {
 
   var ctx = canvas.getContext('2d');
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#0e1318';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   var minLat = 90, maxLat = -90, minLon = 180, maxLon = -180;
   for (var i = 0; i < trackPoints.length; i++) {
@@ -1182,9 +1184,9 @@ function drawMap() {
   ctx.strokeStyle = '#000000';
   ctx.stroke();
 
-  // --- Legend (bottom-right) ---
-  var lx = canvas.width - pad + 2;
-  var ly = canvas.height - pad - 56;
+  // --- Legend (bottom-left, safe on all screen widths) ---
+  var lx = 10;
+  var ly = canvas.height - pad - (items.length * 22) - 4;
   var items = [
     { color: 'rgb(108,99,206)', label: 'WALK' },
     { color: 'rgb(0,230,118)',  label: 'JOG'  },
@@ -1216,6 +1218,8 @@ function drawElevation() {
 
   var ctx = canvas.getContext('2d');
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#0e1318';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   var padL = 72, padR = 24, padT = 36, padB = 44;
   var cw = canvas.width, ch = canvas.height;
