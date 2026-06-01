@@ -34,7 +34,12 @@
     background: var(--bg);
     color: var(--text);
     font-family: 'JetBrains Mono', 'Courier New', monospace;
+    margin: 0; 
+    padding: 0;
+    width: 100%; 
     height: 100%;
+    position: fixed; 
+    top: 0; left: 0; right: 0; bottom: 0;
     overflow: hidden;
     user-select: none;
     -webkit-user-select: none;
@@ -45,57 +50,48 @@
   .app {
     display: flex;
     flex-direction: column;
-    height: 100vh;
-    height: -webkit-fill-available;
-    max-width: 375px;
+    width: 100%;
+    height: 100%;
+    max-width: 480px;
     margin: 0 auto;
     background: var(--bg);
-    /* Very subtle ambient glow from top */
-    background: radial-gradient(ellipse 200% 40% at 50% 0%, rgba(0,230,118,0.04) 0%, var(--bg) 50%);
+  }
+
+  .topbar, .status-bar, .controls {
+    flex-shrink: 0; 
   }
 
   .topbar {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 13px 18px 11px;
+    padding: 14px 20px 10px;
     border-bottom: 1px solid var(--border);
     background: var(--surface);
-    position: relative;
-  }
-
-  /* Hairline accent under topbar */
-  .topbar::after {
-    content: '';
-    position: absolute;
-    bottom: -1px; left: 18px; right: 18px;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, var(--accent-glow), transparent);
   }
 
   .topbar-title {
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: 5px;
+    font-size: 14px;
+    font-weight: bold;
+    letter-spacing: 4px;
     color: var(--accent);
     text-transform: uppercase;
-    text-shadow: 0 0 10px var(--accent-glow);
   }
-
+  
   .top-controls {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
   }
 
   .audio-toggle {
-    font-size: 9px;
+    font-size: 10px;
     font-family: inherit;
-    font-weight: 700;
+    font-weight: bold;
     letter-spacing: 2px;
     color: var(--text-dim);
     cursor: pointer;
-    padding: 3px 7px;
+    padding: 4px 6px;
     border: 1px solid var(--border2);
     border-radius: 3px;
     background: transparent;
@@ -112,14 +108,14 @@
   .gps-indicator {
     display: flex;
     align-items: center;
-    gap: 5px;
-    font-size: 10px;
+    gap: 6px;
+    font-size: 11px;
     color: var(--text-dim);
-    letter-spacing: 1.5px;
+    letter-spacing: 1px;
   }
 
   .gps-dot {
-    width: 7px; height: 7px;
+    width: 8px; height: 8px;
     border-radius: 50%;
     background: var(--text-dim);
     flex-shrink: 0;
@@ -131,62 +127,65 @@
   @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.25} }
 
   .main-section {
-    flex: 1;
+    flex: 1 1 0%;
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    min-height: 0; 
   }
 
   .big-metric {
     background: var(--surface);
-    margin: 12px 14px 0;
+    margin: 14px 14px 0;
     border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 16px 20px;
+    border-radius: 6px;
+    padding: 18px 22px;
     position: relative;
     overflow: hidden;
     cursor: pointer;
-    min-height: 130px;
-    /* Multi-layer depth */
-    box-shadow: 0 2px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.02);
-  }
-
-  /* Active tracking: glowing top border */
-  .big-metric.active {
-    border-color: rgba(0,230,118,0.25);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.3), 0 0 20px rgba(0,230,118,0.06), inset 0 1px 0 rgba(255,255,255,0.02);
+    min-height: 140px;
+    flex-shrink: 0;
   }
 
   .big-metric::after {
     content: '';
     position: absolute;
     bottom: 0; left: -100%;
-    width: 100%; height: 1px;
+    width: 100%; height: 2px;
     background: linear-gradient(90deg, transparent, var(--accent), transparent);
     opacity: 0;
+    transition: opacity 0.4s;
   }
   .big-metric.active::after {
     opacity: 1;
-    animation: scan 2.5s linear infinite;
+    animation: scan 2s linear infinite;
     left: 0;
   }
   @keyframes scan { 0%{left:-100%} 100%{left:100%} }
 
-  .metric-data { transition: opacity 0.2s; }
-
-  .map-container {
-    position: absolute; inset: 0; opacity: 0; pointer-events: none; transition: opacity 0.2s;
+  .metric-data {
+    transition: opacity 0.2s;
   }
-  .map-container canvas { width: 100%; height: 100%; display: block; }
+
+  .map-container, .elev-container {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0; 
+    opacity: 0; pointer-events: none; transition: opacity 0.2s;
+    display: flex; flex-direction: column;
+  }
+
   .map-title {
-    font-size: 9px; letter-spacing: 3px; color: var(--text-dim); text-transform: uppercase;
-    position: absolute; top: 12px; left: 16px; z-index: 1; font-weight: 700;
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    position: absolute;
+    top: 18px;
+    left: 22px;
   }
 
-  .elev-container {
-    position: absolute; inset: 0; opacity: 0; pointer-events: none; transition: opacity 0.2s;
+  .map-container canvas, .elev-container canvas {
+    width: 100%; height: 100%; display: block;
   }
-  .elev-container canvas { width: 100%; height: 100%; display: block; }
 
   .big-metric.show-map .metric-data  { opacity: 0; pointer-events: none; }
   .big-metric.show-map .map-container { opacity: 1; pointer-events: auto; }
@@ -194,51 +193,46 @@
   .big-metric.show-ele .elev-container { opacity: 1; pointer-events: auto; }
 
   .metric-label {
-    font-size: 9px;
-    font-weight: 500;
+    font-size: 10px;
     letter-spacing: 3px;
     color: var(--text-dim);
     text-transform: uppercase;
-    margin-bottom: 3px;
+    margin-bottom: 2px;
   }
 
   .metric-value {
-    font-size: 70px;
-    font-weight: 700;
+    font-size: 68px;
+    font-weight: bold;
     color: var(--accent);
     line-height: 1;
     letter-spacing: -2px;
-    text-shadow: 0 0 20px rgba(0,230,118,0.3), 0 0 40px rgba(0,230,118,0.1);
     font-variant-numeric: tabular-nums;
   }
 
   .metric-unit {
-    font-size: 11px;
-    font-weight: 400;
-    color: var(--text-mid);
-    letter-spacing: 3px;
-    margin-top: 3px;
+    font-size: 13px;
+    color: var(--text-dim);
+    letter-spacing: 2px;
+    margin-top: 2px;
   }
 
   .stats-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 7px;
-    padding: 7px 14px;
+    gap: 8px;
+    padding: 8px 14px;
+    flex-shrink: 0;
   }
 
   .stat-box {
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 11px 13px;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.015);
-    transition: border-color 0.3s;
+    border-radius: 6px;
+    padding: 12px 14px;
   }
 
   .stat-label {
-    font-size: 8px;
-    font-weight: 700;
+    font-size: 9px;
     letter-spacing: 3px;
     color: var(--text-dim);
     text-transform: uppercase;
@@ -246,35 +240,34 @@
   }
 
   .stat-value {
-    font-size: 28px;
-    font-weight: 700;
+    font-size: 30px;
+    font-weight: bold;
     color: var(--text);
     line-height: 1;
     font-variant-numeric: tabular-nums;
   }
 
   .stat-unit {
-    font-size: 9px;
-    font-weight: 400;
+    font-size: 10px;
     color: var(--text-dim);
     letter-spacing: 1px;
     margin-top: 2px;
   }
 
   .laps-section {
-    flex: 1;
+    flex: 1 1 0%;
+    min-height: 0;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-    padding: 0 14px 6px;
+    padding: 0 14px 8px;
   }
 
   .laps-header {
-    font-size: 8px;
-    font-weight: 700;
+    font-size: 9px;
     letter-spacing: 2px;
     color: var(--text-dim);
     text-transform: uppercase;
-    padding: 7px 0 5px;
+    padding: 8px 0 5px;
     border-bottom: 1px solid var(--border);
     display: grid;
     grid-template-columns: 36px 1fr 1fr 1fr;
@@ -285,14 +278,14 @@
     display: grid;
     grid-template-columns: 36px 1fr 1fr 1fr;
     gap: 6px;
-    padding: 6px 0;
+    padding: 7px 0;
     border-bottom: 1px solid var(--border);
-    font-size: 12px;
+    font-size: 13px;
     color: var(--text-mid);
     animation: fadeIn 0.25s ease;
   }
   .lap-row:first-child { color: var(--text); }
-  .lap-row .lap-num { color: var(--text-dim); font-size: 10px; }
+  .lap-row .lap-num { color: var(--text-dim); font-size: 11px; }
 
   @keyframes fadeIn { from{opacity:0;transform:translateY(-4px)} to{opacity:1;transform:none} }
 
@@ -300,8 +293,8 @@
     display: none;
     background: var(--warn-dim);
     border-top: 1px solid rgba(255,123,53,0.3);
-    padding: 8px 16px;
-    font-size: 10px;
+    padding: 9px 16px;
+    font-size: 11px;
     color: var(--warn);
     letter-spacing: 0.4px;
     line-height: 1.55;
@@ -312,23 +305,24 @@
     background: var(--surface);
     border-top: 1px solid var(--border);
     border-bottom: 1px solid var(--border);
-    padding: 8px 16px;
-    font-size: 10px;
+    padding: 8px 18px;
+    font-size: 11px;
     letter-spacing: 0.5px;
     color: var(--text-dim);
-    min-height: 32px;
+    min-height: 34px;
     display: flex;
     align-items: center;
     gap: 7px;
   }
+  
   .status-bar.warn { color: var(--warn); background: var(--warn-dim); }
-  .status-bar.ok { color: var(--accent); background: var(--accent-dim); text-shadow: 0 0 8px var(--accent-glow); }
+  .status-bar.ok { color: var(--accent); background: var(--accent-dim); }
 
   .controls {
     padding: 10px 14px;
     padding-bottom: calc(20px + env(safe-area-inset-bottom, 12px));
     display: flex;
-    gap: 8px;
+    gap: 9px;
     background: var(--surface);
     border-top: 1px solid var(--border);
   }
@@ -336,53 +330,49 @@
   .btn {
     flex: 1;
     border: none;
-    border-radius: 8px;
-    padding: 16px 10px;
+    border-radius: 6px;
+    padding: 17px 10px;
     font-family: inherit;
-    font-size: 14px;
-    font-weight: 700;
+    font-size: 16px;
+    font-weight: bold;
     letter-spacing: 2px;
     text-transform: uppercase;
     cursor: pointer;
-    transition: transform 0.1s, opacity 0.1s, box-shadow 0.1s;
+    transition: transform 0.1s, opacity 0.1s;
     touch-action: manipulation;
     -webkit-touch-callout: none;
   }
   .btn:active { transform: scale(0.96); opacity: 0.85; }
-  .btn:disabled { opacity: 0.2; }
+  .btn:disabled { opacity: 0.25; }
 
-  .btn-start  {
-    background: var(--accent);
-    color: #000;
-    box-shadow: 0 4px 18px rgba(0,230,118,0.3), 0 0 0 1px rgba(0,230,118,0.2);
-  }
+  .btn-start  { background: var(--accent); color: #000; box-shadow: 0 0 18px var(--accent-glow); }
   .btn-pause  { background: var(--surface2); color: var(--warn); border: 1px solid rgba(255,123,53,0.3); }
-  .btn-stop   { background: var(--surface2); color: var(--red); border: 1px solid rgba(255,59,92,0.25); flex: 0.6; }
-  .btn-lap    { background: var(--surface2); color: var(--text-mid); border: 1px solid var(--border2); flex: 0.6; }
+  .btn-stop   { background: var(--surface2); color: var(--red); border: 1px solid rgba(255,59,92,0.25); flex: 0.55; }
+  .btn-lap    { background: var(--surface2); color: var(--text-mid); border: 1px solid var(--border2); flex: 0.55; }
   .btn-export { background: var(--surface3); color: var(--accent); border: 1px solid rgba(0,230,118,0.3); box-shadow: 0 0 14px rgba(0,230,118,0.08); }
-  .btn-reset  { background: var(--surface2); color: var(--text-dim); border: 1px solid var(--border); flex: 0.6; }
-  .btn-lock   { background: var(--surface2); color: var(--text-mid); border: 1px solid var(--border2); flex: 0.6; }
+  .btn-reset  { background: var(--surface2); color: var(--text-dim); border: 1px solid var(--border); flex: 0.55; }
+  .btn-lock   { background: var(--surface2); color: var(--text-mid); border: 1px solid var(--border2); flex: 0.55; }
 
-  /* LOCK OVERLAY */
   .app-lock-overlay {
-    position: fixed; inset: 0; background: rgba(6,9,13,0.97); z-index: 9999;
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+    background: rgba(6,9,13,0.97); z-index: 9999;
     display: none; flex-direction: column; align-items: center; justify-content: center;
   }
   .app-lock-overlay.active { display: flex; }
   .unlock-btn {
     background: transparent; border: 1px solid var(--accent-mid); color: var(--accent);
-    border-radius: 50%; width: 130px; height: 130px; font-size: 12px; font-weight: 700;
+    border-radius: 50%; width: 140px; height: 140px; font-size: 14px; font-weight: bold;
     font-family: inherit; letter-spacing: 2px;
     box-shadow: 0 0 30px var(--accent-dim), inset 0 0 20px rgba(0,230,118,0.03);
-    text-shadow: 0 0 10px var(--accent-glow);
+    /* BUG 1 FIX: Removed 'touch-action: none;' so iOS 12 recognizes the touch event */
     -webkit-user-select: none;
     transition: all 0.15s;
   }
   .unlock-btn:active { background: var(--accent-dim); transform: scale(0.92); }
 
-  /* MODAL */
   .modal-overlay {
-    position: fixed; inset: 0; background: rgba(0,0,0,0.9);
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.9);
     display: none; align-items: flex-end; z-index: 100; touch-action: manipulation;
   }
   .modal-overlay.open { display: flex; }
@@ -395,18 +385,22 @@
     width: 100%; max-height: 88vh;
     overflow-y: auto; -webkit-overflow-scrolling: touch;
   }
-  .modal h2 { font-size: 12px; letter-spacing: 4px; color: var(--accent); margin-bottom: 8px; font-weight: 700; text-shadow: 0 0 8px var(--accent-glow); }
-  .modal p { font-size: 11px; color: var(--text-dim); line-height: 1.65; margin-bottom: 12px; }
-  .modal p strong { color: var(--text-mid); font-weight: 700; }
+  .modal h2 { font-size: 13px; letter-spacing: 4px; color: var(--accent); margin-bottom: 8px; font-weight: bold; }
+  .modal p { font-size: 12px; color: var(--text-dim); line-height: 1.65; margin-bottom: 12px; }
+  .modal p strong { color: var(--text-mid); font-weight: bold; }
   .copy-hint { font-size: 11px; color: var(--warn); margin-bottom: 12px; }
-  .modal-btns { display: flex; gap: 8px; }
-  .modal-btns .btn { padding: 13px; font-size: 11px; }
+  
+  .modal-btns { display: flex; gap: 9px; }
+  .modal-btns .btn { padding: 14px; font-size: 11px; }
+  
   .gpx-box {
     font-size: 9px; color: var(--text-dim); background: var(--bg);
     border: 1px solid var(--border); border-radius: 6px; padding: 8px;
     max-height: 110px; overflow-y: auto; word-break: break-all;
     line-height: 1.4; margin-bottom: 10px;
     -webkit-overflow-scrolling: touch;
+    user-select: text;
+    -webkit-user-select: text;
   }
 </style>
 </head>
@@ -487,14 +481,14 @@
   <div class="modal">
     <h2>EXPORT GPX</h2>
     <p>
-      1. Tap <strong>SELECT ALL</strong> then <strong>Copy</strong><br>
-      2. Paste into a text file → Save as <strong>activity.gpx</strong><br>
-      3. Upload to <strong>Strava → Upload Activity</strong>
+      1. Tap <strong>SELECT ALL</strong> to highlight the text<br>
+      2. Tap <strong>Copy</strong> on the black popup bubble<br>
+      3. Save text as <strong>activity.gpx</strong> &amp; upload to Strava
     </p>
-    <div class="gpx-box" id="gpxContent" style="display:none;"></div>
+    <div class="gpx-box" id="gpxContent"></div>
     <div class="copy-hint" id="copyHint"></div>
     <div class="modal-btns">
-      <button class="btn btn-export" onclick="copyGPX()">SELECT ALL</button>
+      <button class="btn btn-export" onclick="selectAllText()">SELECT ALL</button>
       <button class="btn btn-reset" onclick="closeModal()">CLOSE</button>
     </div>
   </div>
@@ -530,13 +524,11 @@ var laps = [];
 var lapStartDist = 0;
 var lapStartTime = 0;
 var currentSpeed = 0;
-var viewMode = 'dist'; // 'dist' | 'map' | 'ele'
+var viewMode = 'dist'; 
 
-// Audio variables
 var audioEnabled = true;
 var lastAnnouncedKm = 0;
 
-// Crash recovery
 var autoSaveInterval = null;
 var SAVE_KEY = 'gps_tracker_autosave';
 
@@ -634,11 +626,9 @@ function toggleAudio() {
 
 function announceAudio(text) {
   if (!audioEnabled || !('speechSynthesis' in window)) return;
-  // Cancel any currently speaking audio so they don't overlap
   window.speechSynthesis.cancel(); 
   
   var msg = new SpeechSynthesisUtterance(text);
-  // Force English pronunciation to avoid accent errors
   msg.lang = 'en-US'; 
   msg.rate = 1.0;
   msg.volume = 1.0;
@@ -647,7 +637,7 @@ function announceAudio(text) {
 
 function startGPS() {
   if (!navigator.geolocation) { setStatus('warn', 'GPS not supported on this browser.'); return; }
-  if (watchId !== null) return; // FIX: already watching — do not create a second watcher
+  if (watchId !== null) return; 
   setGPS('acquiring');
   setStatus('', 'Searching for GPS signal...');
   watchId = navigator.geolocation.watchPosition(onPosition, onGPSError, {
@@ -726,15 +716,11 @@ function startTracking() {
     lapStartDist = 0;
     lapStartTime = 0;
     currentSpeed = 0;
-    lastAnnouncedKm = 0; // Reset audio tracker
+    lastAnnouncedKm = 0; 
     
-    // Announce immediately to "unlock" iOS audio capabilities
     announceAudio("Tracking started.");
 
     autoSaveInterval = setInterval(autoSave, 30000);
-    // FIX: GPS is already running from page load (startGPS called at init).
-    // Calling startGPS() here again would create a ghost watcher that
-    // can never be cleared, causing the START button to reappear mid-run.
     setStatus('ok', 'Tracking started.');
     startTimer();
     document.getElementById('bigMetric').classList.add('active');
@@ -748,7 +734,7 @@ function startTracking() {
     announceAudio("Resumed.");
 
     autoSaveInterval = setInterval(autoSave, 30000);
-    startGPS(); // Re-start GPS after pause (stopGPS was called on pause, so watchId is null here)
+    startGPS(); 
     startTimer();
     document.getElementById('bigMetric').classList.add('active');
     renderControls();
@@ -890,12 +876,10 @@ function updateUI() {
     document.getElementById('paceDisplay').textContent = '--:--';
   }
 
-  // --- AUDIO LOGIC (Check if we crossed a full kilometer) ---
   var currentWholeKm = Math.floor(distKm);
   if (state === 'tracking' && currentWholeKm > lastAnnouncedKm && currentWholeKm >= 1) {
     lastAnnouncedKm = currentWholeKm;
     
-    // Calculate total time strictly in minutes for natural reading
     var totalMins = Math.floor(elapsed / 60);
     var remainderSecs = elapsed % 60;
     var timeText = totalMins > 0 ? totalMins + " minutes and " + remainderSecs + " seconds" : remainderSecs + " seconds";
@@ -922,11 +906,7 @@ function renderLaps() {
 function renderControls() {
   var c = document.getElementById('controls');
   if (state === 'idle') {
-    // -------------------------------------------------------------------------
-    // The issue was here! WebKit 12 collapses nested flex columns inside flex rows.
-    // Fixed by using standard block layout and 100% width on the button.
-    // -------------------------------------------------------------------------
-    c.innerHTML = '<div style="width: 100%; display: block;"><button class="btn btn-start" id="btnStart" onclick="startTracking()" style="width: 100%; padding: 20px 10px;" disabled>START</button><div id="gpsHint" style="text-align:center;font-size:10px;letter-spacing:1px;color:var(--text-dim);margin-top:12px;">waiting for GPS signal...</div></div>';
+    c.innerHTML = '<button class="btn btn-start" id="btnStart" onclick="startTracking()" disabled style="width: 100%;">START</button>';
   } else if (state === 'tracking') {
     c.innerHTML = '<button class="btn btn-lock" onclick="activateLock()">LOCK</button><button class="btn btn-lap" onclick="addLap()">LAP</button><button class="btn btn-pause" onclick="pauseTracking()">PAUSE</button><button class="btn btn-stop" onclick="stopTracking()">STOP</button>';
   } else if (state === 'paused') {
@@ -972,38 +952,20 @@ function showExport() {
   document.getElementById('modal').classList.add('open');
 }
 
-function copyGPX() {
-  var gpxText = document.getElementById('gpxContent').textContent;
+function selectAllText() {
+  var box = document.getElementById('gpxContent');
   
-  var textArea = document.createElement("textarea");
-  textArea.value = gpxText;
-  
-  textArea.style.position = "fixed";
-  textArea.style.top = "0";
-  textArea.style.left = "0";
-  textArea.style.opacity = "0";
-  
-  document.body.appendChild(textArea);
-  
-  textArea.focus();
-  textArea.select();
-  try {
-    textArea.setSelectionRange(0, 999999);
-  } catch (e) {}
-  
-  var successful = false;
-  try {
-    successful = document.execCommand('copy');
-  } catch (err) {}
-  
-  document.body.removeChild(textArea);
+  if (window.getSelection && document.createRange) {
+    var sel = window.getSelection();
+    var range = document.createRange();
+    range.selectNodeContents(box);
+    sel.removeAllRanges();
+    sel.addRange(range);
+  }
   
   var hint = document.getElementById('copyHint');
-  if (successful) {
-    hint.textContent = '✓ Copied to clipboard!';
-  } else {
-    hint.textContent = 'Auto-copy failed. Please select and copy manually.';
-  }
+  hint.innerHTML = '&uarr; Text highlighted! Tap "Copy" on the popup.';
+  hint.style.color = 'var(--accent)';
 }
 
 function closeModal() {
@@ -1013,24 +975,16 @@ function closeModal() {
 function updateGPSReadiness(acc) {
   if (state !== 'idle') return;
   var btn = document.getElementById('btnStart');
-  var hint = document.getElementById('gpsHint');
-  if (!btn || !hint) return;
+  if (!btn) return;
 
   if (acc <= 70) {
     btn.disabled = false;
     btn.style.opacity = '1';
-    btn.style.boxShadow = '0 0 18px var(--accent-glow)';
-    hint.textContent = '\u2713 GPS ready \u00b7 \u00b1' + Math.round(acc) + 'm';
-    hint.style.color = 'var(--accent)';
+    btn.style.boxShadow = '0 4px 18px rgba(0,230,118,0.3), 0 0 0 1px rgba(0,230,118,0.2)';
   } else {
     btn.disabled = true;
     btn.style.opacity = '0.35';
     btn.style.boxShadow = 'none';
-    var bar = acc > 100 ? '\u25a1\u25a1\u25a1\u25a1\u25a1' :
-              acc > 75  ? '\u25a0\u25a1\u25a1\u25a1\u25a1' :
-              acc > 50  ? '\u25a0\u25a0\u25a1\u25a1\u25a1' : '\u25a0\u25a0\u25a0\u25a1\u25a1';
-    hint.textContent = bar + '  \u00b1' + Math.round(acc) + 'm  — move outdoors';
-    hint.style.color = acc > 100 ? 'var(--warn)' : 'var(--text-mid)';
   }
 }
 
@@ -1042,7 +996,6 @@ function haversine(lat1, lon1, lat2, lon2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 
-// --- VIEW CYCLE: dist → map → ele ---
 function cycleView() {
   var bm = document.getElementById('bigMetric');
   var label = document.getElementById('bigMetricLabel');
@@ -1066,12 +1019,11 @@ function cycleView() {
 }
 
 function speedToColor(mps) {
-  // Color stops: slow (purple) → jog (green) → fast (yellow) → sprint (red-orange)
   var stops = [
-    { t: 0,    r: 108, g:  99, b: 206 }, // purple  — walk / standing
-    { t: 1.5,  r:   0, g: 230, b: 118 }, // accent green — easy jog
-    { t: 3.2,  r: 255, g: 214, b:  10 }, // yellow  — tempo run
-    { t: 5.0,  r: 255, g:  59, b:  92 }, // red     — sprint
+    { t: 0,    r: 108, g:  99, b: 206 }, 
+    { t: 1.5,  r:   0, g: 230, b: 118 }, 
+    { t: 3.2,  r: 255, g: 214, b:  10 }, 
+    { t: 5.0,  r: 255, g:  59, b:  92 }, 
   ];
   var v = Math.max(0, Math.min(mps, stops[stops.length - 1].t));
   for (var i = 0; i < stops.length - 1; i++) {
@@ -1097,7 +1049,7 @@ function drawMap() {
 
   var ctx = canvas.getContext('2d');
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = '#0e1318';
+  ctx.fillStyle = '#0b1018';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   var minLat = 90, maxLat = -90, minLon = 180, maxLon = -180;
@@ -1134,7 +1086,6 @@ function drawMap() {
     };
   }
 
-  // --- Draw heatmap segments ---
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
   ctx.lineWidth = 6;
@@ -1149,7 +1100,6 @@ function drawMap() {
     ctx.stroke();
   }
 
-  // --- START marker (filled accent circle + "S" label) ---
   var start = toXY(trackPoints[0]);
   ctx.beginPath();
   ctx.arc(start.x, start.y, 12, 0, 2 * Math.PI);
@@ -1164,7 +1114,6 @@ function drawMap() {
   ctx.textBaseline = 'middle';
   ctx.fillText('S', start.x, start.y + 1);
 
-  // --- CURRENT POSITION marker (white dot) ---
   var last = toXY(trackPoints[trackPoints.length - 1]);
   ctx.beginPath();
   ctx.arc(last.x, last.y, 10, 0, 2 * Math.PI);
@@ -1174,15 +1123,15 @@ function drawMap() {
   ctx.strokeStyle = '#000000';
   ctx.stroke();
 
-  // --- Legend (bottom-left, safe on all screen widths) ---
   var lx = 10;
-  var ly = canvas.height - pad - (items.length * 22) - 4;
   var items = [
     { color: 'rgb(108,99,206)', label: 'WALK' },
     { color: 'rgb(0,230,118)',  label: 'JOG'  },
     { color: 'rgb(255,214,10)', label: 'RUN'  },
     { color: 'rgb(255,59,92)',  label: 'FAST' },
   ];
+  var ly = canvas.height - pad - (items.length * 22) - 4;
+  
   ctx.font = '16px Courier New';
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
@@ -1197,7 +1146,6 @@ function drawMap() {
   }
 }
 
-// --- ELEVATION CHART ---
 function drawElevation() {
   var canvas = document.getElementById('elevCanvas');
   if (!canvas || trackPoints.length < 2) return;
@@ -1208,7 +1156,7 @@ function drawElevation() {
 
   var ctx = canvas.getContext('2d');
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = '#0e1318';
+  ctx.fillStyle = '#0b1018';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   var padL = 72, padR = 24, padT = 36, padB = 44;
@@ -1216,7 +1164,6 @@ function drawElevation() {
   var W = cw - padL - padR;
   var H = ch - padT  - padB;
 
-  // Build (distance, elevation) pairs — skip 0-elevation points (GPS had no altitude)
   var pts = [];
   var cumDist = 0;
   for (var i = 0; i < trackPoints.length; i++) {
@@ -1231,7 +1178,6 @@ function drawElevation() {
     if (pts[i].e > maxE) maxE = pts[i].e;
   }
   var eleRange = maxE - minE || 1;
-  // Add 10% headroom top/bottom
   var eMin = minE - eleRange * 0.1;
   var eMax = maxE + eleRange * 0.15;
   var eSpan = eMax - eMin;
@@ -1240,7 +1186,6 @@ function drawElevation() {
   function toCanvasX(d) { return padL + (d / totalDist) * W; }
   function toCanvasY(e) { return padT + H - ((e - eMin) / eSpan) * H; }
 
-  // --- Filled area gradient ---
   var grad = ctx.createLinearGradient(0, padT, 0, padT + H);
   grad.addColorStop(0,   'rgba(0,230,118,0.45)');
   grad.addColorStop(1,   'rgba(0,230,118,0.03)');
@@ -1256,7 +1201,6 @@ function drawElevation() {
   ctx.fillStyle = grad;
   ctx.fill();
 
-  // --- Elevation line ---
   ctx.beginPath();
   ctx.lineWidth = 4;
   ctx.strokeStyle = '#00e676';
@@ -1268,7 +1212,6 @@ function drawElevation() {
   }
   ctx.stroke();
 
-  // --- Current position dot ---
   var lp = pts[pts.length - 1];
   ctx.beginPath();
   ctx.arc(toCanvasX(lp.d), toCanvasY(lp.e), 9, 0, 2 * Math.PI);
@@ -1278,7 +1221,6 @@ function drawElevation() {
   ctx.strokeStyle = '#000';
   ctx.stroke();
 
-  // --- Y-axis labels (min / max elevation) ---
   ctx.font = '20px Courier New';
   ctx.textAlign = 'right';
   ctx.textBaseline = 'middle';
@@ -1286,7 +1228,6 @@ function drawElevation() {
   ctx.fillText(Math.round(maxE) + 'm', padL - 8, padT + 4);
   ctx.fillText(Math.round(minE) + 'm', padL - 8, padT + H - 4);
 
-  // --- Gain label top-right ---
   var gain = 0;
   for (var i = 1; i < trackPoints.length; i++) {
     var diff = (trackPoints[i].ele || 0) - (trackPoints[i-1].ele || 0);
@@ -1297,25 +1238,23 @@ function drawElevation() {
   ctx.fillStyle = 'rgba(0,230,118,0.75)';
   ctx.fillText('\u2191 ' + Math.round(gain) + 'm gain', cw - padR, padT);
 
-  // --- X-axis label ---
   ctx.textAlign = 'center';
   ctx.textBaseline = 'bottom';
   ctx.fillStyle = 'rgba(255,255,255,0.3)';
   ctx.fillText((totalDist / 1000).toFixed(2) + ' km', padL + W / 2, ch - 4);
 
-  // --- Title ---
   ctx.textAlign = 'left';
   ctx.textBaseline = 'top';
   ctx.fillStyle = 'rgba(255,255,255,0.25)';
   ctx.font = '18px Courier New';
   ctx.fillText('ELEVATION', padL, padT - 28);
 }
-renderControls(); // Render initial idle controls (START button) on page load
+
+renderControls();
 setStatus('', 'Ready. Press START to begin.');
 startGPS();
 checkCrashRecovery();
 
-// --- SCREEN LOCK LOGIC ---
 var lockOverlay = document.getElementById('appLock');
 var unlockBtn = document.getElementById('unlockBtn');
 var unlockTimer = null;
