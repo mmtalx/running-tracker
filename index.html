@@ -55,6 +55,7 @@
     max-width: 480px;
     margin: 0 auto;
     background: var(--bg);
+    background: radial-gradient(ellipse 200% 40% at 50% 0%, rgba(0,230,118,0.04) 0%, var(--bg) 50%);
   }
 
   .topbar, .status-bar, .controls {
@@ -65,33 +66,44 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 14px 20px 10px;
+    padding: 13px 18px 11px;
     border-bottom: 1px solid var(--border);
     background: var(--surface);
+    position: relative;
+  }
+
+  .topbar::after {
+    content: '';
+    position: absolute;
+    bottom: -1px; left: 18px; right: 18px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent-glow), transparent);
   }
 
   .topbar-title {
-    font-size: 14px;
-    font-weight: bold;
-    letter-spacing: 4px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 5px;
     color: var(--accent);
     text-transform: uppercase;
+    text-shadow: 0 0 10px var(--accent-glow);
   }
-  
+
   .top-controls {
     display: flex;
     align-items: center;
-    gap: 12px;
   }
+  
+  .top-controls > * + * { margin-left: 10px; }
 
   .audio-toggle {
-    font-size: 10px;
+    font-size: 9px;
     font-family: inherit;
-    font-weight: bold;
+    font-weight: 700;
     letter-spacing: 2px;
     color: var(--text-dim);
     cursor: pointer;
-    padding: 4px 6px;
+    padding: 3px 7px;
     border: 1px solid var(--border2);
     border-radius: 3px;
     background: transparent;
@@ -108,14 +120,14 @@
   .gps-indicator {
     display: flex;
     align-items: center;
-    gap: 6px;
-    font-size: 11px;
+    font-size: 10px;
     color: var(--text-dim);
-    letter-spacing: 1px;
+    letter-spacing: 1.5px;
   }
+  .gps-indicator > * + * { margin-left: 5px; }
 
   .gps-dot {
-    width: 8px; height: 8px;
+    width: 7px; height: 7px;
     border-radius: 50%;
     background: var(--text-dim);
     flex-shrink: 0;
@@ -136,55 +148,50 @@
 
   .big-metric {
     background: var(--surface);
-    margin: 14px 14px 0;
+    margin: 12px 14px 0;
     border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 18px 22px;
+    border-radius: 10px;
+    padding: 16px 20px;
     position: relative;
     overflow: hidden;
     cursor: pointer;
-    min-height: 140px;
+    min-height: 130px;
     flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.02);
+  }
+
+  .big-metric.active {
+    border-color: rgba(0,230,118,0.25);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3), 0 0 20px rgba(0,230,118,0.06), inset 0 1px 0 rgba(255,255,255,0.02);
   }
 
   .big-metric::after {
     content: '';
     position: absolute;
     bottom: 0; left: -100%;
-    width: 100%; height: 2px;
+    width: 100%; height: 1px;
     background: linear-gradient(90deg, transparent, var(--accent), transparent);
     opacity: 0;
-    transition: opacity 0.4s;
   }
   .big-metric.active::after {
     opacity: 1;
-    animation: scan 2s linear infinite;
+    animation: scan 2.5s linear infinite;
     left: 0;
   }
   @keyframes scan { 0%{left:-100%} 100%{left:100%} }
 
-  .metric-data {
-    transition: opacity 0.2s;
-  }
+  .metric-data { transition: opacity 0.2s; }
 
   .map-container, .elev-container {
     position: absolute; top: 0; left: 0; right: 0; bottom: 0; 
     opacity: 0; pointer-events: none; transition: opacity 0.2s;
     display: flex; flex-direction: column;
   }
-
+  .map-container canvas, .elev-container canvas { width: 100%; height: 100%; display: block; }
+  
   .map-title {
-    font-size: 10px;
-    letter-spacing: 3px;
-    color: var(--text-dim);
-    text-transform: uppercase;
-    position: absolute;
-    top: 18px;
-    left: 22px;
-  }
-
-  .map-container canvas, .elev-container canvas {
-    width: 100%; height: 100%; display: block;
+    font-size: 9px; letter-spacing: 3px; color: var(--text-dim); text-transform: uppercase;
+    position: absolute; top: 12px; left: 16px; z-index: 1; font-weight: 700;
   }
 
   .big-metric.show-map .metric-data  { opacity: 0; pointer-events: none; }
@@ -193,46 +200,52 @@
   .big-metric.show-ele .elev-container { opacity: 1; pointer-events: auto; }
 
   .metric-label {
-    font-size: 10px;
+    font-size: 9px;
+    font-weight: 500;
     letter-spacing: 3px;
     color: var(--text-dim);
     text-transform: uppercase;
-    margin-bottom: 2px;
+    margin-bottom: 3px;
   }
 
   .metric-value {
-    font-size: 68px;
-    font-weight: bold;
+    font-size: 70px;
+    font-weight: 700;
     color: var(--accent);
     line-height: 1;
     letter-spacing: -2px;
+    text-shadow: 0 0 20px rgba(0,230,118,0.3), 0 0 40px rgba(0,230,118,0.1);
     font-variant-numeric: tabular-nums;
   }
 
   .metric-unit {
-    font-size: 13px;
-    color: var(--text-dim);
-    letter-spacing: 2px;
-    margin-top: 2px;
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--text-mid);
+    letter-spacing: 3px;
+    margin-top: 3px;
   }
 
   .stats-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 8px;
-    padding: 8px 14px;
+    grid-gap: 7px;
+    padding: 7px 14px;
     flex-shrink: 0;
   }
 
   .stat-box {
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 12px 14px;
+    border-radius: 8px;
+    padding: 11px 13px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.015);
+    transition: border-color 0.3s;
   }
 
   .stat-label {
-    font-size: 9px;
+    font-size: 8px;
+    font-weight: 700;
     letter-spacing: 3px;
     color: var(--text-dim);
     text-transform: uppercase;
@@ -240,15 +253,16 @@
   }
 
   .stat-value {
-    font-size: 30px;
-    font-weight: bold;
+    font-size: 28px;
+    font-weight: 700;
     color: var(--text);
     line-height: 1;
     font-variant-numeric: tabular-nums;
   }
 
   .stat-unit {
-    font-size: 10px;
+    font-size: 9px;
+    font-weight: 400;
     color: var(--text-dim);
     letter-spacing: 1px;
     margin-top: 2px;
@@ -256,36 +270,37 @@
 
   .laps-section {
     flex: 1 1 0%;
-    min-height: 0;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-    padding: 0 14px 8px;
+    padding: 0 14px 6px;
+    min-height: 0;
   }
 
   .laps-header {
-    font-size: 9px;
+    font-size: 8px;
+    font-weight: 700;
     letter-spacing: 2px;
     color: var(--text-dim);
     text-transform: uppercase;
-    padding: 8px 0 5px;
+    padding: 7px 0 5px;
     border-bottom: 1px solid var(--border);
     display: grid;
     grid-template-columns: 36px 1fr 1fr 1fr;
-    gap: 6px;
+    grid-gap: 6px;
   }
 
   .lap-row {
     display: grid;
     grid-template-columns: 36px 1fr 1fr 1fr;
-    gap: 6px;
-    padding: 7px 0;
+    grid-gap: 6px;
+    padding: 6px 0;
     border-bottom: 1px solid var(--border);
-    font-size: 13px;
+    font-size: 12px;
     color: var(--text-mid);
     animation: fadeIn 0.25s ease;
   }
   .lap-row:first-child { color: var(--text); }
-  .lap-row .lap-num { color: var(--text-dim); font-size: 11px; }
+  .lap-row .lap-num { color: var(--text-dim); font-size: 10px; }
 
   @keyframes fadeIn { from{opacity:0;transform:translateY(-4px)} to{opacity:1;transform:none} }
 
@@ -293,8 +308,8 @@
     display: none;
     background: var(--warn-dim);
     border-top: 1px solid rgba(255,123,53,0.3);
-    padding: 9px 16px;
-    font-size: 11px;
+    padding: 8px 16px;
+    font-size: 10px;
     color: var(--warn);
     letter-spacing: 0.4px;
     line-height: 1.55;
@@ -305,53 +320,57 @@
     background: var(--surface);
     border-top: 1px solid var(--border);
     border-bottom: 1px solid var(--border);
-    padding: 8px 18px;
-    font-size: 11px;
+    padding: 8px 16px;
+    font-size: 10px;
     letter-spacing: 0.5px;
     color: var(--text-dim);
-    min-height: 34px;
+    min-height: 32px;
     display: flex;
     align-items: center;
-    gap: 7px;
   }
+  .status-bar > * + * { margin-left: 7px; }
   
   .status-bar.warn { color: var(--warn); background: var(--warn-dim); }
-  .status-bar.ok { color: var(--accent); background: var(--accent-dim); }
+  .status-bar.ok { color: var(--accent); background: var(--accent-dim); text-shadow: 0 0 8px var(--accent-glow); }
 
   .controls {
     padding: 10px 14px;
     padding-bottom: calc(20px + env(safe-area-inset-bottom, 12px));
     display: flex;
-    gap: 9px;
     background: var(--surface);
     border-top: 1px solid var(--border);
   }
+  .controls > * + * { margin-left: 8px; }
 
   .btn {
     flex: 1;
     border: none;
-    border-radius: 6px;
-    padding: 17px 10px;
+    border-radius: 8px;
+    padding: 16px 10px;
     font-family: inherit;
-    font-size: 16px;
-    font-weight: bold;
+    font-size: 14px;
+    font-weight: 700;
     letter-spacing: 2px;
     text-transform: uppercase;
     cursor: pointer;
-    transition: transform 0.1s, opacity 0.1s;
+    transition: transform 0.1s, opacity 0.1s, box-shadow 0.1s;
     touch-action: manipulation;
     -webkit-touch-callout: none;
   }
   .btn:active { transform: scale(0.96); opacity: 0.85; }
-  .btn:disabled { opacity: 0.25; }
+  .btn:disabled { opacity: 0.2; }
 
-  .btn-start  { background: var(--accent); color: #000; box-shadow: 0 0 18px var(--accent-glow); }
+  .btn-start  {
+    background: var(--accent);
+    color: #000;
+    box-shadow: 0 4px 18px rgba(0,230,118,0.3), 0 0 0 1px rgba(0,230,118,0.2);
+  }
   .btn-pause  { background: var(--surface2); color: var(--warn); border: 1px solid rgba(255,123,53,0.3); }
-  .btn-stop   { background: var(--surface2); color: var(--red); border: 1px solid rgba(255,59,92,0.25); flex: 0.55; }
-  .btn-lap    { background: var(--surface2); color: var(--text-mid); border: 1px solid var(--border2); flex: 0.55; }
+  .btn-stop   { background: var(--surface2); color: var(--red); border: 1px solid rgba(255,59,92,0.25); flex: 0.6; }
+  .btn-lap    { background: var(--surface2); color: var(--text-mid); border: 1px solid var(--border2); flex: 0.6; }
   .btn-export { background: var(--surface3); color: var(--accent); border: 1px solid rgba(0,230,118,0.3); box-shadow: 0 0 14px rgba(0,230,118,0.08); }
-  .btn-reset  { background: var(--surface2); color: var(--text-dim); border: 1px solid var(--border); flex: 0.55; }
-  .btn-lock   { background: var(--surface2); color: var(--text-mid); border: 1px solid var(--border2); flex: 0.55; }
+  .btn-reset  { background: var(--surface2); color: var(--text-dim); border: 1px solid var(--border); flex: 0.6; }
+  .btn-lock   { background: var(--surface2); color: var(--text-mid); border: 1px solid var(--border2); flex: 0.6; }
 
   .app-lock-overlay {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
@@ -361,10 +380,10 @@
   .app-lock-overlay.active { display: flex; }
   .unlock-btn {
     background: transparent; border: 1px solid var(--accent-mid); color: var(--accent);
-    border-radius: 50%; width: 140px; height: 140px; font-size: 14px; font-weight: bold;
+    border-radius: 50%; width: 130px; height: 130px; font-size: 12px; font-weight: 700;
     font-family: inherit; letter-spacing: 2px;
     box-shadow: 0 0 30px var(--accent-dim), inset 0 0 20px rgba(0,230,118,0.03);
-    /* BUG 1 FIX: Removed 'touch-action: none;' so iOS 12 recognizes the touch event */
+    text-shadow: 0 0 10px var(--accent-glow);
     -webkit-user-select: none;
     transition: all 0.15s;
   }
@@ -385,13 +404,14 @@
     width: 100%; max-height: 88vh;
     overflow-y: auto; -webkit-overflow-scrolling: touch;
   }
-  .modal h2 { font-size: 13px; letter-spacing: 4px; color: var(--accent); margin-bottom: 8px; font-weight: bold; }
-  .modal p { font-size: 12px; color: var(--text-dim); line-height: 1.65; margin-bottom: 12px; }
-  .modal p strong { color: var(--text-mid); font-weight: bold; }
+  .modal h2 { font-size: 12px; letter-spacing: 4px; color: var(--accent); margin-bottom: 8px; font-weight: 700; text-shadow: 0 0 8px var(--accent-glow); }
+  .modal p { font-size: 11px; color: var(--text-dim); line-height: 1.65; margin-bottom: 12px; }
+  .modal p strong { color: var(--text-mid); font-weight: 700; }
   .copy-hint { font-size: 11px; color: var(--warn); margin-bottom: 12px; }
   
-  .modal-btns { display: flex; gap: 9px; }
-  .modal-btns .btn { padding: 14px; font-size: 11px; }
+  .modal-btns { display: flex; }
+  .modal-btns > * + * { margin-left: 8px; }
+  .modal-btns .btn { padding: 13px; font-size: 11px; }
   
   .gpx-box {
     font-size: 9px; color: var(--text-dim); background: var(--bg);
@@ -660,16 +680,23 @@ function onPosition(pos) {
   var acc = pos.coords.accuracy;
   var t = new Date(pos.timestamp);
 
-  if (acc > 200) {
-    setStatus('ok', 'GPS locked · ±' + Math.round(acc) + 'm (go outdoors for better accuracy)');
-    updateGPSReadiness(acc);
+  updateGPSReadiness(acc);
+
+  // If the accuracy is terrible, show a warning and reject the point entirely
+  if (acc > 100) {
+    setStatus('warn', 'Poor GPS \u00b7 \u00b1' + Math.round(acc) + 'm (go outdoors)');
     return;
   }
 
-  setStatus('ok', 'Tracking \u00b7 accuracy \u00b1' + Math.round(acc) + 'm');
-  updateGPSReadiness(acc);
-
   if (state === 'tracking') {
+    // FIX 1: Strict Accuracy Cutoff (35 meters limit)
+    if (acc > 35) {
+      setStatus('warn', 'Weak Signal \u00b7 \u00b1' + Math.round(acc) + 'm (Paused)');
+      return; // Ignore this noisy point so it doesn't add fake distance
+    }
+
+    setStatus('ok', 'Tracking \u00b7 accuracy \u00b1' + Math.round(acc) + 'm');
+
     if (!lastPosition) {
       lastPosition = { lat: lat, lon: lon, time: t };
       trackPoints.push({ lat: lat, lon: lon, ele: ele, time: t, speed: 0 });
@@ -677,18 +704,27 @@ function onPosition(pos) {
       updateUI();
     } else {
       var d = haversine(lastPosition.lat, lastPosition.lon, lat, lon);
+      var dt = (t - lastPosition.time) / 1000; 
+      var calcSpeed = dt > 0 ? (d / dt) : 0;
       
-      if (d >= 4 && d < 50) {
+      // FIX 2 & 3: Distance >= 8m (anti-jitter) AND Speed < 9.72 m/s (anti-bounce)
+      if (d >= 8 && calcSpeed < 9.72) {
         totalDistance += d;
-        currentSpeed = (spd && spd > 0) ? spd : estimateSpeed(lastPosition, lat, lon, t);
+        currentSpeed = (spd && spd > 0) ? spd : calcSpeed;
         trackPoints.push({ lat: lat, lon: lon, ele: ele, time: t, speed: currentSpeed });
         document.getElementById('pointsDisplay').textContent = trackPoints.length;
         lastPosition = { lat: lat, lon: lon, time: t };
         updateUI();
       }
     }
-  } else if (!lastPosition) {
-    lastPosition = { lat: lat, lon: lon, time: t };
+  } else if (state === 'idle') {
+    // Ensure we only save a high-quality start position
+    if (acc <= 35) {
+      lastPosition = { lat: lat, lon: lon, time: t };
+      setStatus('ok', 'GPS Ready \u00b7 \u00b1' + Math.round(acc) + 'm');
+    } else {
+      setStatus('', 'Searching for better signal... (\u00b1' + Math.round(acc) + 'm)');
+    }
   }
 }
 
@@ -906,7 +942,7 @@ function renderLaps() {
 function renderControls() {
   var c = document.getElementById('controls');
   if (state === 'idle') {
-    c.innerHTML = '<button class="btn btn-start" id="btnStart" onclick="startTracking()" disabled style="width: 100%;">START</button>';
+    c.innerHTML = '<div style="width: 100%; display: flex; flex-direction: column; gap: 12px;"><button class="btn btn-start" id="btnStart" onclick="startTracking()" disabled style="width: 100%; padding: 18px 10px;">START</button></div>';
   } else if (state === 'tracking') {
     c.innerHTML = '<button class="btn btn-lock" onclick="activateLock()">LOCK</button><button class="btn btn-lap" onclick="addLap()">LAP</button><button class="btn btn-pause" onclick="pauseTracking()">PAUSE</button><button class="btn btn-stop" onclick="stopTracking()">STOP</button>';
   } else if (state === 'paused') {
@@ -977,7 +1013,8 @@ function updateGPSReadiness(acc) {
   var btn = document.getElementById('btnStart');
   if (!btn) return;
 
-  if (acc <= 70) {
+  // Tightened requirement: You now need a 50m accuracy lock to even press START
+  if (acc <= 50) {
     btn.disabled = false;
     btn.style.opacity = '1';
     btn.style.boxShadow = '0 4px 18px rgba(0,230,118,0.3), 0 0 0 1px rgba(0,230,118,0.2)';
@@ -1044,6 +1081,9 @@ function drawMap() {
   if (!canvas || trackPoints.length === 0) return;
 
   var rect = canvas.parentElement.getBoundingClientRect();
+  // BUG 2 FIX: Fallback to the main container size if map is hidden
+  if (rect.width === 0) rect = document.getElementById('bigMetric').getBoundingClientRect();
+  
   canvas.width = rect.width * 2;
   canvas.height = rect.height * 2;
 
@@ -1151,6 +1191,9 @@ function drawElevation() {
   if (!canvas || trackPoints.length < 2) return;
 
   var rect = canvas.parentElement.getBoundingClientRect();
+  // BUG 2 FIX: Fallback to the main container size if chart is hidden
+  if (rect.width === 0) rect = document.getElementById('bigMetric').getBoundingClientRect();
+
   canvas.width  = rect.width  * 2;
   canvas.height = rect.height * 2;
 
