@@ -689,8 +689,8 @@ function onPosition(pos) {
   }
 
   if (state === 'tracking') {
-    // Strict Accuracy Cutoff (35 meters limit)
-    if (acc > 35) {
+    // Relaxed Accuracy Cutoff (70 meters limit) to support older hardware
+    if (acc > 70) {
       setStatus('warn', 'Weak Signal \u00b7 \u00b1' + Math.round(acc) + 'm (Paused)');
       return; 
     }
@@ -718,8 +718,8 @@ function onPosition(pos) {
       }
     }
   } else if (state === 'idle') {
-    // Ensure we only save a high-quality start position
-    if (acc <= 35) {
+    // Save a start position if accuracy is at least 70m
+    if (acc <= 70) {
       lastPosition = { lat: lat, lon: lon, time: t };
       setStatus('ok', 'GPS Ready \u00b7 \u00b1' + Math.round(acc) + 'm');
     } else {
@@ -1013,7 +1013,6 @@ function updateGPSReadiness(acc) {
   var btn = document.getElementById('btnStart');
   if (!btn) return;
 
-  // Relaxed requirement: You need an 80m accuracy lock to press START (tracking will wait for 35m)
   if (acc <= 80) {
     btn.disabled = false;
     btn.style.opacity = '1';
