@@ -689,10 +689,10 @@ function onPosition(pos) {
   }
 
   if (state === 'tracking') {
-    // FIX 1: Strict Accuracy Cutoff (35 meters limit)
+    // Strict Accuracy Cutoff (35 meters limit)
     if (acc > 35) {
       setStatus('warn', 'Weak Signal \u00b7 \u00b1' + Math.round(acc) + 'm (Paused)');
-      return; // Ignore this noisy point so it doesn't add fake distance
+      return; 
     }
 
     setStatus('ok', 'Tracking \u00b7 accuracy \u00b1' + Math.round(acc) + 'm');
@@ -707,7 +707,7 @@ function onPosition(pos) {
       var dt = (t - lastPosition.time) / 1000; 
       var calcSpeed = dt > 0 ? (d / dt) : 0;
       
-      // FIX 2 & 3: Distance >= 8m (anti-jitter) AND Speed < 9.72 m/s (anti-bounce)
+      // Distance >= 8m (anti-jitter) AND Speed < 9.72 m/s (anti-bounce)
       if (d >= 8 && calcSpeed < 9.72) {
         totalDistance += d;
         currentSpeed = (spd && spd > 0) ? spd : calcSpeed;
@@ -1013,8 +1013,8 @@ function updateGPSReadiness(acc) {
   var btn = document.getElementById('btnStart');
   if (!btn) return;
 
-  // Tightened requirement: You now need a 50m accuracy lock to even press START
-  if (acc <= 50) {
+  // Relaxed requirement: You need an 80m accuracy lock to press START (tracking will wait for 35m)
+  if (acc <= 80) {
     btn.disabled = false;
     btn.style.opacity = '1';
     btn.style.boxShadow = '0 4px 18px rgba(0,230,118,0.3), 0 0 0 1px rgba(0,230,118,0.2)';
@@ -1081,7 +1081,6 @@ function drawMap() {
   if (!canvas || trackPoints.length === 0) return;
 
   var rect = canvas.parentElement.getBoundingClientRect();
-  // BUG 2 FIX: Fallback to the main container size if map is hidden
   if (rect.width === 0) rect = document.getElementById('bigMetric').getBoundingClientRect();
   
   canvas.width = rect.width * 2;
@@ -1191,7 +1190,6 @@ function drawElevation() {
   if (!canvas || trackPoints.length < 2) return;
 
   var rect = canvas.parentElement.getBoundingClientRect();
-  // BUG 2 FIX: Fallback to the main container size if chart is hidden
   if (rect.width === 0) rect = document.getElementById('bigMetric').getBoundingClientRect();
 
   canvas.width  = rect.width  * 2;
