@@ -660,6 +660,7 @@ function startGPS() {
   if (watchId !== null) return; 
   setGPS('acquiring');
   setStatus('', 'Searching for GPS signal...');
+  // Timeout left at 30 seconds for standard mobile data environments
   watchId = navigator.geolocation.watchPosition(onPosition, onGPSError, {
     enableHighAccuracy: true,
     timeout: 30000,
@@ -682,15 +683,14 @@ function onPosition(pos) {
 
   updateGPSReadiness(acc);
 
-  // If the accuracy is terrible, show a warning and reject the point entirely
   if (acc > 100) {
     setStatus('warn', 'Poor GPS \u00b7 \u00b1' + Math.round(acc) + 'm (go outdoors)');
     return;
   }
 
   if (state === 'tracking') {
-    // Relaxed Accuracy Cutoff (70 meters limit) to support older hardware
-    if (acc > 70) {
+    // Cutoff expanded to 90m to maintain tracking through moderate interference
+    if (acc > 90) {
       setStatus('warn', 'Weak Signal \u00b7 \u00b1' + Math.round(acc) + 'm (Paused)');
       return; 
     }
@@ -707,8 +707,8 @@ function onPosition(pos) {
       var dt = (t - lastPosition.time) / 1000; 
       var calcSpeed = dt > 0 ? (d / dt) : 0;
       
-      // Distance >= 8m (anti-jitter) AND Speed < 9.72 m/s (anti-bounce)
-      if (d >= 8 && calcSpeed < 9.72) {
+      // Speed check increased to 16.66 m/s (60 km/h) to allow catch-up plotting
+      if (d >= 8 && calcSpeed < 16.66) {
         totalDistance += d;
         currentSpeed = (spd && spd > 0) ? spd : calcSpeed;
         trackPoints.push({ lat: lat, lon: lon, ele: ele, time: t, speed: currentSpeed });
@@ -718,8 +718,7 @@ function onPosition(pos) {
       }
     }
   } else if (state === 'idle') {
-    // Save a start position if accuracy is at least 70m
-    if (acc <= 70) {
+    if (acc <= 90) {
       lastPosition = { lat: lat, lon: lon, time: t };
       setStatus('ok', 'GPS Ready \u00b7 \u00b1' + Math.round(acc) + 'm');
     } else {
@@ -885,9 +884,7 @@ function updateUI() {
   var elapsed = getElapsed();
   var distKm = totalDistance / 1000;
   
-  if (state === 'tracking' && lastPosition && (Date.now() - lastPosition.time.getTime() > 4000)) {
-    currentSpeed = 0;
-  }
+  // Speed is no longer forcibly reset after 4 seconds of inactivity.
   
   var speedKmh = currentSpeed * 3.6;
   var paceMinKm = speedKmh > 0.5 ? 60 / speedKmh : 0;
@@ -1013,7 +1010,7 @@ function updateGPSReadiness(acc) {
   var btn = document.getElementById('btnStart');
   if (!btn) return;
 
-  if (acc <= 80) {
+  if (acc <= 90) {
     btn.disabled = false;
     btn.style.opacity = '1';
     btn.style.boxShadow = '0 4px 18px rgba(0,230,118,0.3), 0 0 0 1px rgba(0,230,118,0.2)';
