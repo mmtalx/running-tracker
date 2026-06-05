@@ -81,9 +81,9 @@
   }
 
   .topbar-title {
-    font-size: 12px;
+    font-size: 10px;
     font-weight: 700;
-    letter-spacing: 5px;
+    letter-spacing: 3px;
     color: var(--accent);
     text-transform: uppercase;
     text-shadow: 0 0 10px var(--accent-glow);
@@ -116,27 +116,6 @@
     text-shadow: 0 0 6px var(--accent-glow);
     box-shadow: 0 0 8px var(--accent-dim);
   }
-
-  .gps-indicator {
-    display: flex;
-    align-items: center;
-    font-size: 10px;
-    color: var(--text-dim);
-    letter-spacing: 1.5px;
-  }
-  .gps-indicator > * + * { margin-left: 5px; }
-
-  .gps-dot {
-    width: 7px; height: 7px;
-    border-radius: 50%;
-    background: var(--text-dim);
-    flex-shrink: 0;
-    transition: all 0.3s;
-  }
-  .gps-dot.acquiring { background: var(--warn); box-shadow: 0 0 6px var(--warn); animation: pulse 1s infinite; }
-  .gps-dot.locked { background: var(--accent); box-shadow: 0 0 8px var(--accent-glow); }
-
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.25} }
 
   .main-section {
     flex: 1 1 0%;
@@ -178,42 +157,6 @@
 
   .overlay-stat.warn-pulse { color: #ffd600; animation: statPulse 1.2s ease-in-out infinite; }
   @keyframes statPulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
-
-  .laps-section {
-    flex: 1 1 0%;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    padding: 0 14px 6px;
-    min-height: 0;
-  }
-
-  .laps-header {
-    font-size: 8px;
-    font-weight: 700;
-    letter-spacing: 2px;
-    color: var(--text-dim);
-    text-transform: uppercase;
-    padding: 7px 0 5px;
-    border-bottom: 1px solid var(--border);
-    display: grid;
-    grid-template-columns: 36px 1fr 1fr 1fr;
-    grid-gap: 6px;
-  }
-
-  .lap-row {
-    display: grid;
-    grid-template-columns: 36px 1fr 1fr 1fr;
-    grid-gap: 6px;
-    padding: 6px 0;
-    border-bottom: 1px solid var(--border);
-    font-size: 12px;
-    color: var(--text-mid);
-    animation: fadeIn 0.25s ease;
-  }
-  .lap-row:first-child { color: var(--text); }
-  .lap-row .lap-num { color: var(--text-dim); font-size: 10px; }
-
-  @keyframes fadeIn { from{opacity:0;transform:translateY(-4px)} to{opacity:1;transform:none} }
 
   .wake-warning {
     display: none;
@@ -277,11 +220,10 @@
     box-shadow: 0 4px 18px rgba(0,230,118,0.3), 0 0 0 1px rgba(0,230,118,0.2);
   }
   .btn-pause  { background: var(--surface2); color: var(--warn); border: 1px solid rgba(255,123,53,0.3); }
-  .btn-stop   { background: var(--surface2); color: var(--red); border: 1px solid rgba(255,59,92,0.25); flex: 0.6; }
-  .btn-lap    { background: var(--surface2); color: var(--text-mid); border: 1px solid var(--border2); flex: 0.6; }
+  .btn-stop   { background: var(--surface2); color: var(--red); border: 1px solid rgba(255,59,92,0.25); }
   .btn-export { background: var(--surface3); color: var(--accent); border: 1px solid rgba(0,230,118,0.3); box-shadow: 0 0 14px rgba(0,230,118,0.08); }
   .btn-reset  { background: var(--surface2); color: var(--text-dim); border: 1px solid var(--border); flex: 0.6; }
-  .btn-lock   { background: var(--surface2); color: var(--text-mid); border: 1px solid var(--border2); flex: 0.6; }
+  .btn-lock   { background: var(--surface2); color: var(--text-mid); border: 1px solid var(--border2); }
 
   .app-lock-overlay {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
@@ -342,10 +284,6 @@
     <div class="topbar-title">Running · Tracker</div>
     <div class="top-controls">
       <div class="audio-toggle active" id="audioToggle" onclick="toggleAudio()">SFX</div>
-      <div class="gps-indicator">
-        <div class="gps-dot" id="gpsDot"></div>
-        <span id="gpsLabel">NO SIGNAL</span>
-      </div>
     </div>
   </div>
 
@@ -357,13 +295,6 @@
         <div class="overlay-stat" id="timeDisplay">00:00</div>
         <div class="overlay-stat" id="paceDisplay">--:-- <span class="overlay-unit">/ km</span></div>
       </div>
-    </div>
-
-    <div class="laps-section">
-      <div class="laps-header" id="lapsHeader" style="display:none">
-        <div>#</div><div>Dist</div><div>Time</div><div>Pace</div>
-      </div>
-      <div id="lapsList"></div>
     </div>
   </div>
 
@@ -422,9 +353,6 @@ var timerInterval = null;
 var lastPosition = null;
 var totalDistance = 0;
 var trackPoints = [];
-var laps = [];
-var lapStartDist = 0;
-var lapStartTime = 0;
 var currentSpeed = 0;
 var lastValidPointTime = null;
 
@@ -455,9 +383,6 @@ function autoSave() {
       id: "currentRun",
       trackPoints: trackPoints,
       totalDistance: totalDistance,
-      laps: laps,
-      lapStartDist: lapStartDist,
-      lapStartTime: lapStartTime,
       startTime: startTime,
       pausedTime: pausedTime,
       state: state,
@@ -518,9 +443,6 @@ function confirmRestore() {
 
   trackPoints   = snap.trackPoints;
   totalDistance = snap.totalDistance;
-  laps          = snap.laps || [];
-  lapStartDist  = snap.lapStartDist || 0;
-  lapStartTime  = snap.lapStartTime || 0;
   startTime     = snap.startTime;
   pausedTime    = snap.pausedTime || 0;
   state         = 'paused';
@@ -528,10 +450,8 @@ function confirmRestore() {
 
   document.getElementById('distanceDisplay').innerHTML = (totalDistance / 1000).toFixed(2) + ' <span class="overlay-unit">km</span>';
   document.getElementById('statsOverlay').classList.add('active');
-  document.getElementById('lapsHeader').style.display    = 'grid';
 
   pauseStart = Date.now();
-  renderLaps();
   renderControls();
   drawMap();
   setStatus('warn', 'Run restored \u2014 tap RESUME to continue.');
@@ -640,7 +560,6 @@ function announceAudio(text) {
 function startGPS() {
   if (!navigator.geolocation) { setStatus('warn', 'GPS not supported on this browser.'); return; }
   if (watchId !== null) return; 
-  setGPS('acquiring');
   setStatus('', 'Searching for GPS signal...');
   watchId = navigator.geolocation.watchPosition(onPosition, onGPSError, {
     enableHighAccuracy: true,
@@ -654,7 +573,6 @@ function stopGPS() {
 }
 
 function onPosition(pos) {
-  setGPS('locked');
   var lat = pos.coords.latitude;
   var lon = pos.coords.longitude;
   var ele = pos.coords.altitude || 0;
@@ -713,7 +631,6 @@ function onPosition(pos) {
 function onGPSError(err) {
   var msgs = { 1: 'Location access denied. Please allow GPS in Safari.', 2: 'GPS unavailable.', 3: 'GPS timeout — try again.' };
   setStatus('warn', msgs[err.code] || 'GPS error.');
-  setGPS('no');
 }
 
 function startTracking() {
@@ -723,9 +640,6 @@ function startTracking() {
     pausedTime = 0;
     totalDistance = 0;
     trackPoints = [];
-    laps = [];
-    lapStartDist = 0;
-    lapStartTime = 0;
     currentSpeed = 0;
     lastAnnouncedKm = 0;
     lastValidPointTime = Date.now();
@@ -737,7 +651,6 @@ function startTracking() {
     startTimer();
     document.getElementById('statsOverlay').classList.add('active');
     requestWakeLock();
-    document.getElementById('lapsHeader').style.display = 'grid';
     renderControls();
   } else if (state === 'paused') {
     state = 'tracking';
@@ -788,19 +701,6 @@ function stopTracking() {
   setStatus('ok', 'Done! ' + (totalDistance/1000).toFixed(2) + 'km \u2014 tap EXPORT GPX to save.');
 }
 
-function addLap() {
-  if (state !== 'tracking') return;
-  var elapsed = getElapsed();
-  var lapDist = totalDistance - lapStartDist;
-  var lapTime = elapsed - lapStartTime;
-  var pace = (lapTime > 0 && lapDist > 0) ? (lapTime / 60) / (lapDist / 1000) : 0;
-  laps.unshift({ n: laps.length + 1, dist: lapDist, time: lapTime, pace: pace });
-  lapStartDist = totalDistance;
-  lapStartTime = elapsed;
-  renderLaps();
-  announceAudio("Lap " + laps.length);
-}
-
 function resetAll() {
   if (!confirm('Reset and clear all data?')) return;
   state = 'idle';
@@ -809,8 +709,7 @@ function resetAll() {
   stopGPS();
   clearInterval(timerInterval);
   startTime = null; pausedTime = 0; pauseStart = null;
-  totalDistance = 0; trackPoints = []; laps = [];
-  lapStartDist = 0; lapStartTime = 0; currentSpeed = 0; lastPosition = null;
+  totalDistance = 0; trackPoints = []; currentSpeed = 0; lastPosition = null;
   lastAnnouncedKm = 0; lastValidPointTime = null;
   
   var overlay = document.getElementById('statsOverlay');
@@ -819,11 +718,8 @@ function resetAll() {
   document.getElementById('distanceDisplay').innerHTML = '0.00 <span class="overlay-unit">km</span>';
   document.getElementById('timeDisplay').textContent = '00:00';
   document.getElementById('paceDisplay').innerHTML = '--:-- <span class="overlay-unit">/ km</span>';
-  document.getElementById('lapsList').innerHTML = '';
-  document.getElementById('lapsHeader').style.display = 'none';
   releaseWakeLock();
   renderControls();
-  setGPS('no');
   
   var canvas = document.getElementById('mapCanvas');
   var ctx = canvas.getContext('2d');
@@ -907,34 +803,17 @@ function clearWarnPulse() {
   for (var i = 0; i < stats.length; i++) { stats[i].classList.remove('warn-pulse'); }
 }
 
-function renderLaps() {
-  var list = document.getElementById('lapsList');
-  list.innerHTML = laps.map(function(l) {
-    var pace = (l.pace > 0 && l.pace < 60) ? (Math.floor(l.pace) + ':' + pad(Math.round((l.pace % 1) * 60))) : '--:--';
-    return '<div class="lap-row"><span class="lap-num">' + l.n + '</span><span>' + (l.dist/1000).toFixed(2) + 'km</span><span>' + formatTime(l.time) + '</span><span>' + pace + '</span></div>';
-  }).join('');
-}
-
 function renderControls() {
   var c = document.getElementById('controls');
   if (state === 'idle') {
     c.innerHTML = '<div style="width: 100%; display: flex; flex-direction: column; gap: 12px;"><button class="btn btn-start" id="btnStart" onclick="startTracking()" disabled style="width: 100%; padding: 18px 10px;">START</button></div>';
   } else if (state === 'tracking') {
-    c.innerHTML = '<button class="btn btn-lock" onclick="activateLock()">LOCK</button><button class="btn btn-lap" onclick="addLap()">LAP</button><button class="btn btn-pause" onclick="pauseTracking()">PAUSE</button><button class="btn btn-stop" onclick="stopTracking()">STOP</button>';
+    c.innerHTML = '<button class="btn btn-lock" onclick="activateLock()">LOCK</button><button class="btn btn-pause" onclick="pauseTracking()">PAUSE</button><button class="btn btn-stop" onclick="stopTracking()">STOP</button>';
   } else if (state === 'paused') {
     c.innerHTML = '<button class="btn btn-start" onclick="startTracking()">RESUME</button><button class="btn btn-stop" onclick="stopTracking()">STOP</button>';
   } else if (state === 'finished') {
     c.innerHTML = '<button class="btn btn-export" onclick="showExport()">EXPORT GPX</button><button class="btn btn-reset" onclick="resetAll()">RESET</button>';
   }
-}
-
-function setGPS(s) {
-  var dot = document.getElementById('gpsDot');
-  var lbl = document.getElementById('gpsLabel');
-  dot.className = 'gps-dot';
-  if (s === 'acquiring') { dot.classList.add('acquiring'); lbl.textContent = 'ACQUIRING'; }
-  else if (s === 'locked') { dot.classList.add('locked'); lbl.textContent = 'LOCKED'; }
-  else { lbl.textContent = 'NO SIGNAL'; }
 }
 
 function setStatus(type, msg) {
