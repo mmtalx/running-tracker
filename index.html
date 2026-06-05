@@ -117,6 +117,27 @@
     box-shadow: 0 0 8px var(--accent-dim);
   }
 
+  .gps-indicator {
+    display: flex;
+    align-items: center;
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 1.5px;
+  }
+  .gps-indicator > * + * { margin-left: 5px; }
+
+  .gps-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--text-dim);
+    flex-shrink: 0;
+    transition: all 0.3s;
+  }
+  .gps-dot.acquiring { background: var(--warn); box-shadow: 0 0 6px var(--warn); animation: pulse 1s infinite; }
+  .gps-dot.locked { background: var(--accent); box-shadow: 0 0 8px var(--accent-glow); }
+
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.25} }
+
   .main-section {
     flex: 1 1 0%;
     display: flex;
@@ -140,7 +161,7 @@
     top: 10px; left: 10px;
     background: rgba(0,0,0,0.72);
     border-radius: 6px;
-    padding: 8px 12px;
+    padding: 10px 14px;
     display: none;
     z-index: 2;
   }
@@ -148,12 +169,12 @@
 
   .overlay-stat {
     color: var(--accent);
-    font-size: 16px;
+    font-size: 19px;
     font-weight: 700;
     font-variant-numeric: tabular-nums;
     line-height: 1.6;
   }
-  .overlay-unit { font-size: 10px; color: var(--text-mid); font-weight: 400; letter-spacing: 1px; }
+  .overlay-unit { font-size: 12px; color: var(--text-mid); font-weight: 400; letter-spacing: 1px; }
 
   .overlay-stat.warn-pulse { color: #ffd600; animation: statPulse 1.2s ease-in-out infinite; }
   @keyframes statPulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
