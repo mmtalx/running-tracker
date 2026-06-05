@@ -550,12 +550,28 @@ var audioEnabled = true;
 var lastAnnouncedKm = 0;
 
 var autoSaveInterval = null;
-var SAVE_KEY = 'gps_tracker_autosave';
+
+// IndexedDB Setup
+var db;
+var request = indexedDB.open("GPSTrackerDB", 1);
+
+request.onupgradeneeded = function(event) {
+  db = event.target.result;
+  if (!db.objectStoreNames.contains("autosave")) {
+    db.createObjectStore("autosave", { keyPath: "id" });
+  }
+};
+
+request.onsuccess = function(event) {
+  db = event.target.result;
+  checkCrashRecovery(); 
+};
 
 function autoSave() {
-  if (state !== 'tracking' && state !== 'paused') return;
+  if (state !== 'tracking' && state !== 'paused' || !db) return;
   try {
     var snapshot = {
+      id: "currentRun",
       trackPoints: trackPoints,
       totalDistance: totalDistance,
       laps: laps,
@@ -566,35 +582,50 @@ function autoSave() {
       state: state,
       savedAt: Date.now()
     };
-    localStorage.setItem(SAVE_KEY, JSON.stringify(snapshot));
+    var transaction = db.transaction(["autosave"], "readwrite");
+    var store = transaction.objectStore("autosave");
+    store.put(snapshot);
   } catch(e) {}
 }
 
 function clearAutoSave() {
-  try { localStorage.removeItem(SAVE_KEY); } catch(e) {}
+  if (!db) return;
+  try {
+    var transaction = db.transaction(["autosave"], "readwrite");
+    var store = transaction.objectStore("autosave");
+    store.delete("currentRun");
+  } catch(e) {}
 }
 
 var pendingSnapshot = null;
 
 function checkCrashRecovery() {
+  if (!db) return;
   try {
-    var raw = localStorage.getItem(SAVE_KEY);
-    if (!raw) return;
-    var snap = JSON.parse(raw);
-    if (!snap || !snap.trackPoints || snap.trackPoints.length === 0) { clearAutoSave(); return; }
+    var transaction = db.transaction(["autosave"], "readonly");
+    var store = transaction.objectStore("autosave");
+    var getReq = store.get("currentRun");
 
-    snap.trackPoints = snap.trackPoints.map(function(p) {
-      p.time = new Date(p.time); return p;
-    });
+    getReq.onsuccess = function(event) {
+      var snap = event.target.result;
+      if (!snap || !snap.trackPoints || snap.trackPoints.length === 0) { 
+        clearAutoSave(); 
+        return; 
+      }
 
-    var ageMin = Math.round((Date.now() - snap.savedAt) / 60000);
-    var ageTxt = ageMin < 1 ? 'just now' : ageMin + ' min ago';
-    var km = (snap.totalDistance / 1000).toFixed(2);
+      snap.trackPoints = snap.trackPoints.map(function(p) {
+        p.time = new Date(p.time); return p;
+      });
 
-    pendingSnapshot = snap;
-    document.getElementById('recoveryInfo').innerHTML =
-      '<strong style="color:var(--accent)">' + km + ' km</strong> recorded &mdash; saved ' + ageTxt + '.';
-    document.getElementById('recoveryModal').classList.add('open');
+      var ageMin = Math.round((Date.now() - snap.savedAt) / 60000);
+      var ageTxt = ageMin < 1 ? 'just now' : ageMin + ' min ago';
+      var km = (snap.totalDistance / 1000).toFixed(2);
+
+      pendingSnapshot = snap;
+      document.getElementById('recoveryInfo').innerHTML =
+        '<strong style="color:var(--accent)">' + km + ' km</strong> recorded &mdash; saved ' + ageTxt + '.';
+      document.getElementById('recoveryModal').classList.add('open');
+    };
   } catch(e) { clearAutoSave(); }
 }
 
@@ -622,6 +653,7 @@ function confirmRestore() {
   pauseStart = Date.now();
   renderLaps();
   renderControls();
+  renderCanvas();
   setStatus('warn', 'Run restored \u2014 tap RESUME to continue.');
 }
 
@@ -660,7 +692,6 @@ function startGPS() {
   if (watchId !== null) return; 
   setGPS('acquiring');
   setStatus('', 'Searching for GPS signal...');
-  // Timeout left at 30 seconds for standard mobile data environments
   watchId = navigator.geolocation.watchPosition(onPosition, onGPSError, {
     enableHighAccuracy: true,
     timeout: 30000,
@@ -670,6 +701,14 @@ function startGPS() {
 
 function stopGPS() {
   if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
+}
+
+function renderCanvas() {
+  if (viewMode === 'map') {
+    drawMap();
+  } else if (viewMode === 'ele') {
+    drawElevation();
+  }
 }
 
 function onPosition(pos) {
@@ -689,7 +728,6 @@ function onPosition(pos) {
   }
 
   if (state === 'tracking') {
-    // Cutoff expanded to 90m to maintain tracking through moderate interference
     if (acc > 90) {
       setStatus('warn', 'Weak Signal \u00b7 \u00b1' + Math.round(acc) + 'm (Paused)');
       return; 
@@ -702,12 +740,12 @@ function onPosition(pos) {
       trackPoints.push({ lat: lat, lon: lon, ele: ele, time: t, speed: 0 });
       document.getElementById('pointsDisplay').textContent = trackPoints.length;
       updateUI();
+      renderCanvas();
     } else {
       var d = haversine(lastPosition.lat, lastPosition.lon, lat, lon);
       var dt = (t - lastPosition.time) / 1000; 
       var calcSpeed = dt > 0 ? (d / dt) : 0;
       
-      // Speed check increased to 16.66 m/s (60 km/h) to allow catch-up plotting
       if (d >= 8 && calcSpeed < 16.66) {
         totalDistance += d;
         currentSpeed = (spd && spd > 0) ? spd : calcSpeed;
@@ -715,6 +753,7 @@ function onPosition(pos) {
         document.getElementById('pointsDisplay').textContent = trackPoints.length;
         lastPosition = { lat: lat, lon: lon, time: t };
         updateUI();
+        renderCanvas();
       }
     }
   } else if (state === 'idle') {
@@ -731,13 +770,6 @@ function onGPSError(err) {
   var msgs = { 1: 'Location access denied. Please allow GPS in Safari.', 2: 'GPS unavailable.', 3: 'GPS timeout — try again.' };
   setStatus('warn', msgs[err.code] || 'GPS error.');
   setGPS('no');
-}
-
-function estimateSpeed(prev, lat, lon, now) {
-  if (!prev) return 0;
-  var d = haversine(prev.lat, prev.lon, lat, lon);
-  var dt = (now - prev.time) / 1000;
-  return dt > 0 ? d / dt : 0;
 }
 
 function startTracking() {
@@ -884,8 +916,6 @@ function updateUI() {
   var elapsed = getElapsed();
   var distKm = totalDistance / 1000;
   
-  // Speed is no longer forcibly reset after 4 seconds of inactivity.
-  
   var speedKmh = currentSpeed * 3.6;
   var paceMinKm = speedKmh > 0.5 ? 60 / speedKmh : 0;
 
@@ -919,12 +949,6 @@ function updateUI() {
     var paceText = (pm > 0 || ps > 0) ? ". Pace: " + pm + " minutes, " + ps + " seconds per kilometer." : ".";
     
     announceAudio("Distance: " + currentWholeKm + " kilometers. Time: " + timeText + paceText);
-  }
-
-  if (viewMode === 'map') {
-    drawMap();
-  } else if (viewMode === 'ele') {
-    drawElevation();
   }
 }
 
@@ -1039,16 +1063,16 @@ function cycleView() {
     viewMode = 'map';
     bm.classList.add('show-map');
     label.textContent = 'Route Map \u00b7 Tap for Elev';
-    drawMap();
   } else if (viewMode === 'map') {
     viewMode = 'ele';
     bm.classList.add('show-ele');
     label.textContent = 'Elevation \u00b7 Tap for Dist';
-    drawElevation();
   } else {
     viewMode = 'dist';
     label.textContent = 'Distance \u00b7 Tap for Map';
   }
+  
+  renderCanvas();
 }
 
 function speedToColor(mps) {
@@ -1290,7 +1314,6 @@ function drawElevation() {
 renderControls();
 setStatus('', 'Ready. Press START to begin.');
 startGPS();
-checkCrashRecovery();
 
 var lockOverlay = document.getElementById('appLock');
 var unlockBtn = document.getElementById('unlockBtn');
