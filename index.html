@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>GPS Tracker</title>
+<title>Running Tracker</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&display=swap');
 
@@ -143,130 +143,41 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    min-height: 0; 
+    min-height: 0;
   }
 
-  .big-metric {
-    background: var(--surface);
-    margin: 12px 14px 0;
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 16px 20px;
+  .map-area {
+    flex: 1 1 0%;
     position: relative;
     overflow: hidden;
-    cursor: pointer;
-    min-height: 130px;
-    flex-shrink: 0;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.02);
-  }
-
-  .big-metric.active {
-    border-color: rgba(0,230,118,0.25);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.3), 0 0 20px rgba(0,230,118,0.06), inset 0 1px 0 rgba(255,255,255,0.02);
-  }
-
-  .big-metric::after {
-    content: '';
-    position: absolute;
-    bottom: 0; left: -100%;
-    width: 100%; height: 1px;
-    background: linear-gradient(90deg, transparent, var(--accent), transparent);
-    opacity: 0;
-  }
-  .big-metric.active::after {
-    opacity: 1;
-    animation: scan 2.5s linear infinite;
-    left: 0;
-  }
-  @keyframes scan { 0%{left:-100%} 100%{left:100%} }
-
-  .metric-data { transition: opacity 0.2s; }
-
-  .map-container, .elev-container {
-    position: absolute; top: 0; left: 0; right: 0; bottom: 0; 
-    opacity: 0; pointer-events: none; transition: opacity 0.2s;
-    display: flex; flex-direction: column;
-  }
-  .map-container canvas, .elev-container canvas { width: 100%; height: 100%; display: block; }
-  
-  .map-title {
-    font-size: 9px; letter-spacing: 3px; color: var(--text-dim); text-transform: uppercase;
-    position: absolute; top: 12px; left: 16px; z-index: 1; font-weight: 700;
-  }
-
-  .big-metric.show-map .metric-data  { opacity: 0; pointer-events: none; }
-  .big-metric.show-map .map-container { opacity: 1; pointer-events: auto; }
-  .big-metric.show-ele .metric-data  { opacity: 0; pointer-events: none; }
-  .big-metric.show-ele .elev-container { opacity: 1; pointer-events: auto; }
-
-  .metric-label {
-    font-size: 9px;
-    font-weight: 500;
-    letter-spacing: 3px;
-    color: var(--text-dim);
-    text-transform: uppercase;
-    margin-bottom: 3px;
-  }
-
-  .metric-value {
-    font-size: 70px;
-    font-weight: 700;
-    color: var(--accent);
-    line-height: 1;
-    letter-spacing: -2px;
-    text-shadow: 0 0 20px rgba(0,230,118,0.3), 0 0 40px rgba(0,230,118,0.1);
-    font-variant-numeric: tabular-nums;
-  }
-
-  .metric-unit {
-    font-size: 11px;
-    font-weight: 400;
-    color: var(--text-mid);
-    letter-spacing: 3px;
-    margin-top: 3px;
-  }
-
-  .stats-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-gap: 7px;
-    padding: 7px 14px;
-    flex-shrink: 0;
-  }
-
-  .stat-box {
+    min-height: 0;
     background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 11px 13px;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.015);
-    transition: border-color 0.3s;
   }
 
-  .stat-label {
-    font-size: 8px;
-    font-weight: 700;
-    letter-spacing: 3px;
-    color: var(--text-dim);
-    text-transform: uppercase;
-    margin-bottom: 3px;
-  }
+  .map-area canvas { width: 100%; height: 100%; display: block; }
 
-  .stat-value {
-    font-size: 28px;
+  .stats-overlay {
+    position: absolute;
+    top: 10px; left: 10px;
+    background: rgba(0,0,0,0.72);
+    border-radius: 6px;
+    padding: 8px 12px;
+    display: none;
+    z-index: 2;
+  }
+  .stats-overlay.active { display: block; }
+
+  .overlay-stat {
+    color: var(--accent);
+    font-size: 16px;
     font-weight: 700;
-    color: var(--text);
-    line-height: 1;
     font-variant-numeric: tabular-nums;
+    line-height: 1.6;
   }
+  .overlay-unit { font-size: 10px; color: var(--text-mid); font-weight: 400; letter-spacing: 1px; }
 
-  .stat-unit {
-    font-size: 9px;
-    font-weight: 400;
-    color: var(--text-dim);
-    letter-spacing: 1px;
-    margin-top: 2px;
-  }
+  .overlay-stat.warn-pulse { color: #ffd600; animation: statPulse 1.2s ease-in-out infinite; }
+  @keyframes statPulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
   .laps-section {
     flex: 1 1 0%;
@@ -428,7 +339,7 @@
 <div class="app">
 
   <div class="topbar">
-    <div class="topbar-title">GPS · Tracker</div>
+    <div class="topbar-title">Running · Tracker</div>
     <div class="top-controls">
       <div class="audio-toggle active" id="audioToggle" onclick="toggleAudio()">SFX</div>
       <div class="gps-indicator">
@@ -439,41 +350,12 @@
   </div>
 
   <div class="main-section">
-    <div class="big-metric" id="bigMetric" onclick="cycleView()">
-      <div class="metric-data">
-        <div class="metric-label" id="bigMetricLabel">Distance · Tap for Map</div>
-        <div class="metric-value" id="distanceDisplay">0.00</div>
-        <div class="metric-unit">KM</div>
-      </div>
-      <div class="map-container">
-        <div class="map-title" id="mapTitle">Route Map · Tap for Elev</div>
-        <canvas id="mapCanvas"></canvas>
-      </div>
-      <div class="elev-container">
-        <canvas id="elevCanvas"></canvas>
-      </div>
-    </div>
-
-    <div class="stats-grid">
-      <div class="stat-box">
-        <div class="stat-label">Time</div>
-        <div class="stat-value" id="timeDisplay">00:00</div>
-        <div class="stat-unit">elapsed</div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-label">Pace</div>
-        <div class="stat-value" id="paceDisplay">--:--</div>
-        <div class="stat-unit">min / km</div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-label">Speed</div>
-        <div class="stat-value" id="speedDisplay">0.0</div>
-        <div class="stat-unit">km / h</div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-label">GPS pts</div>
-        <div class="stat-value" id="pointsDisplay">0</div>
-        <div class="stat-unit">recorded</div>
+    <div class="map-area" id="mapArea">
+      <canvas id="mapCanvas"></canvas>
+      <div class="stats-overlay" id="statsOverlay">
+        <div class="overlay-stat" id="distanceDisplay">0.00 <span class="overlay-unit">km</span></div>
+        <div class="overlay-stat" id="timeDisplay">00:00</div>
+        <div class="overlay-stat" id="paceDisplay">--:-- <span class="overlay-unit">/ km</span></div>
       </div>
     </div>
 
@@ -495,6 +377,10 @@
 
   <div class="controls" id="controls"></div>
 
+</div>
+
+<div class="app-lock-overlay" id="appLock">
+  <button class="unlock-btn" id="unlockBtn">HOLD 2S<br>TO UNLOCK</button>
 </div>
 
 <div class="modal-overlay" id="modal">
@@ -526,10 +412,6 @@
   </div>
 </div>
 
-<div class="app-lock-overlay" id="appLock">
-  <button class="unlock-btn" id="unlockBtn">HOLD 2S<br>TO UNLOCK</button>
-</div>
-
 <script>
 var state = 'idle';
 var watchId = null;
@@ -544,14 +426,13 @@ var laps = [];
 var lapStartDist = 0;
 var lapStartTime = 0;
 var currentSpeed = 0;
-var viewMode = 'dist'; 
+var lastValidPointTime = null;
 
 var audioEnabled = true;
 var lastAnnouncedKm = 0;
 
 var autoSaveInterval = null;
 
-// IndexedDB Setup (Phase 2)
 var db;
 var request = indexedDB.open("GPSTrackerDB", 1);
 
@@ -645,14 +526,14 @@ function confirmRestore() {
   state         = 'paused';
   lastPosition  = trackPoints[trackPoints.length - 1] || null;
 
-  document.getElementById('distanceDisplay').textContent = (totalDistance / 1000).toFixed(2);
-  document.getElementById('pointsDisplay').textContent   = trackPoints.length;
+  document.getElementById('distanceDisplay').innerHTML = (totalDistance / 1000).toFixed(2) + ' <span class="overlay-unit">km</span>';
+  document.getElementById('statsOverlay').classList.add('active');
   document.getElementById('lapsHeader').style.display    = 'grid';
 
   pauseStart = Date.now();
   renderLaps();
   renderControls();
-  renderCanvas();
+  drawMap();
   setStatus('warn', 'Run restored \u2014 tap RESUME to continue.');
 }
 
@@ -662,7 +543,6 @@ function discardRestore() {
   clearAutoSave();
 }
 
-// Screen Wake Lock API (Phase 4)
 var wakeLock = null;
 
 async function requestWakeLock() {
@@ -691,7 +571,6 @@ document.addEventListener('visibilitychange', function() {
   }
 });
 
-// GPX Builder Web Worker (Phase 3)
 var workerCode = `
 self.onmessage = function(e) {
   if (e.data.type === 'buildGPX') {
@@ -722,15 +601,17 @@ self.onmessage = function(e) {
 };
 `;
 
-var workerBlob = new Blob([workerCode], {type: 'application/javascript'});
-var dataWorker = new Worker(URL.createObjectURL(workerBlob));
-
-dataWorker.onmessage = function(e) {
-  if (e.data.type === 'gpxBuilt') {
-    document.getElementById('gpxContent').textContent = e.data.xml;
-    document.getElementById('copyHint').textContent = '';
-  }
-};
+var dataWorker = null;
+try {
+  var workerBlob = new Blob([workerCode], {type: 'application/javascript'});
+  dataWorker = new Worker(URL.createObjectURL(workerBlob));
+  dataWorker.onmessage = function(e) {
+    if (e.data.type === 'gpxBuilt') {
+      document.getElementById('gpxContent').textContent = e.data.xml;
+      document.getElementById('copyHint').textContent = '';
+    }
+  };
+} catch(e) {}
 
 function toggleAudio() {
   audioEnabled = !audioEnabled;
@@ -772,14 +653,6 @@ function stopGPS() {
   if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
 }
 
-function renderCanvas() {
-  if (viewMode === 'map') {
-    drawMap();
-  } else if (viewMode === 'ele') {
-    drawElevation();
-  }
-}
-
 function onPosition(pos) {
   setGPS('locked');
   var lat = pos.coords.latitude;
@@ -807,9 +680,10 @@ function onPosition(pos) {
     if (!lastPosition) {
       lastPosition = { lat: lat, lon: lon, time: t };
       trackPoints.push({ lat: lat, lon: lon, ele: ele, time: t, speed: 0 });
-      document.getElementById('pointsDisplay').textContent = trackPoints.length;
+      lastValidPointTime = Date.now();
+      clearWarnPulse();
       updateUI();
-      renderCanvas();
+      drawMap();
     } else {
       var d = haversine(lastPosition.lat, lastPosition.lon, lat, lon);
       var dt = (t - lastPosition.time) / 1000; 
@@ -819,10 +693,11 @@ function onPosition(pos) {
         totalDistance += d;
         currentSpeed = (spd && spd > 0) ? spd : calcSpeed;
         trackPoints.push({ lat: lat, lon: lon, ele: ele, time: t, speed: currentSpeed });
-        document.getElementById('pointsDisplay').textContent = trackPoints.length;
+        lastValidPointTime = Date.now();
+        clearWarnPulse();
         lastPosition = { lat: lat, lon: lon, time: t };
         updateUI();
-        renderCanvas();
+        drawMap();
       }
     }
   } else if (state === 'idle') {
@@ -852,27 +727,29 @@ function startTracking() {
     lapStartDist = 0;
     lapStartTime = 0;
     currentSpeed = 0;
-    lastAnnouncedKm = 0; 
+    lastAnnouncedKm = 0;
+    lastValidPointTime = Date.now();
     
     announceAudio("Tracking started.");
 
     autoSaveInterval = setInterval(autoSave, 30000);
     setStatus('ok', 'Tracking started.');
     startTimer();
-    document.getElementById('bigMetric').classList.add('active');
+    document.getElementById('statsOverlay').classList.add('active');
     requestWakeLock();
     document.getElementById('lapsHeader').style.display = 'grid';
     renderControls();
   } else if (state === 'paused') {
     state = 'tracking';
     pausedTime += Date.now() - pauseStart;
+    lastValidPointTime = Date.now();
     
     announceAudio("Resumed.");
 
     autoSaveInterval = setInterval(autoSave, 30000);
     startGPS(); 
     startTimer();
-    document.getElementById('bigMetric').classList.add('active');
+    document.getElementById('statsOverlay').classList.add('active');
     requestWakeLock();
     renderControls();
     setStatus('ok', 'Resumed.');
@@ -890,7 +767,6 @@ function pauseTracking() {
   autoSave();
   stopGPS();
   clearInterval(timerInterval);
-  document.getElementById('bigMetric').classList.remove('active');
   releaseWakeLock();
   renderControls();
   setStatus('', 'Paused.');
@@ -907,7 +783,6 @@ function stopTracking() {
   clearAutoSave();
   stopGPS();
   clearInterval(timerInterval);
-  document.getElementById('bigMetric').classList.remove('active');
   releaseWakeLock();
   renderControls();
   setStatus('ok', 'Done! ' + (totalDistance/1000).toFixed(2) + 'km \u2014 tap EXPORT GPX to save.');
@@ -936,26 +811,20 @@ function resetAll() {
   startTime = null; pausedTime = 0; pauseStart = null;
   totalDistance = 0; trackPoints = []; laps = [];
   lapStartDist = 0; lapStartTime = 0; currentSpeed = 0; lastPosition = null;
-  lastAnnouncedKm = 0;
+  lastAnnouncedKm = 0; lastValidPointTime = null;
   
-  document.getElementById('distanceDisplay').textContent = '0.00';
+  var overlay = document.getElementById('statsOverlay');
+  overlay.classList.remove('active');
+  clearWarnPulse();
+  document.getElementById('distanceDisplay').innerHTML = '0.00 <span class="overlay-unit">km</span>';
   document.getElementById('timeDisplay').textContent = '00:00';
-  document.getElementById('paceDisplay').textContent = '--:--';
-  document.getElementById('speedDisplay').textContent = '0.0';
-  document.getElementById('pointsDisplay').textContent = '0';
+  document.getElementById('paceDisplay').innerHTML = '--:-- <span class="overlay-unit">/ km</span>';
   document.getElementById('lapsList').innerHTML = '';
   document.getElementById('lapsHeader').style.display = 'none';
-  document.getElementById('bigMetric').classList.remove('active');
   releaseWakeLock();
   renderControls();
   setGPS('no');
   
-  if (viewMode !== 'dist') {
-    viewMode = 'dist';
-    var bm2 = document.getElementById('bigMetric');
-    bm2.classList.remove('show-map', 'show-ele');
-    document.getElementById('bigMetricLabel').textContent = 'Distance \u00b7 Tap for Map';
-  }
   var canvas = document.getElementById('mapCanvas');
   var ctx = canvas.getContext('2d');
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -990,9 +859,8 @@ function updateUI() {
   var speedKmh = currentSpeed * 3.6;
   var paceMinKm = speedKmh > 0.5 ? 60 / speedKmh : 0;
 
-  document.getElementById('distanceDisplay').textContent = distKm.toFixed(2);
+  document.getElementById('distanceDisplay').innerHTML = distKm.toFixed(2) + ' <span class="overlay-unit">km</span>';
   document.getElementById('timeDisplay').textContent = formatTime(elapsed);
-  document.getElementById('speedDisplay').textContent = speedKmh.toFixed(1);
 
   if (paceMinKm <= 0 || paceMinKm >= 60) {
     var distKmTotal = totalDistance / 1000;
@@ -1005,9 +873,15 @@ function updateUI() {
   if (paceMinKm > 0 && paceMinKm < 60) {
     pm = Math.floor(paceMinKm);
     ps = Math.round((paceMinKm - pm) * 60);
-    document.getElementById('paceDisplay').textContent = pm + ':' + pad(ps);
+    document.getElementById('paceDisplay').innerHTML = pm + ':' + pad(ps) + ' <span class="overlay-unit">/ km</span>';
   } else {
-    document.getElementById('paceDisplay').textContent = '--:--';
+    document.getElementById('paceDisplay').innerHTML = '--:-- <span class="overlay-unit">/ km</span>';
+  }
+
+  if (state === 'tracking' && lastValidPointTime !== null) {
+    if (Date.now() - lastValidPointTime > 15000) {
+      setWarnPulse();
+    }
   }
 
   var currentWholeKm = Math.floor(distKm);
@@ -1021,6 +895,16 @@ function updateUI() {
     
     announceAudio("Distance: " + currentWholeKm + " kilometers. Time: " + timeText + paceText);
   }
+}
+
+function setWarnPulse() {
+  var stats = document.querySelectorAll('.overlay-stat');
+  for (var i = 0; i < stats.length; i++) { stats[i].classList.add('warn-pulse'); }
+}
+
+function clearWarnPulse() {
+  var stats = document.querySelectorAll('.overlay-stat');
+  for (var i = 0; i < stats.length; i++) { stats[i].classList.remove('warn-pulse'); }
 }
 
 function renderLaps() {
@@ -1066,7 +950,11 @@ function showExport() {
   document.getElementById('copyHint').textContent = '';
   document.getElementById('modal').classList.add('open');
   
-  dataWorker.postMessage({ type: 'buildGPX', points: trackPoints });
+  if (dataWorker) {
+    dataWorker.postMessage({ type: 'buildGPX', points: trackPoints });
+  } else {
+    document.getElementById('gpxContent').textContent = 'Worker unavailable in this environment.';
+  }
 }
 
 function selectAllText() {
@@ -1113,28 +1001,6 @@ function haversine(lat1, lon1, lat2, lon2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 
-function cycleView() {
-  var bm = document.getElementById('bigMetric');
-  var label = document.getElementById('bigMetricLabel');
-
-  bm.classList.remove('show-map', 'show-ele');
-
-  if (viewMode === 'dist') {
-    viewMode = 'map';
-    bm.classList.add('show-map');
-    label.textContent = 'Route Map \u00b7 Tap for Elev';
-  } else if (viewMode === 'map') {
-    viewMode = 'ele';
-    bm.classList.add('show-ele');
-    label.textContent = 'Elevation \u00b7 Tap for Dist';
-  } else {
-    viewMode = 'dist';
-    label.textContent = 'Distance \u00b7 Tap for Map';
-  }
-  
-  renderCanvas();
-}
-
 function speedToColor(mps) {
   var stops = [
     { t: 0,    r: 108, g:  99, b: 206 }, 
@@ -1161,7 +1027,7 @@ function drawMap() {
   if (!canvas || trackPoints.length === 0) return;
 
   var rect = canvas.parentElement.getBoundingClientRect();
-  if (rect.width === 0) rect = document.getElementById('bigMetric').getBoundingClientRect();
+  if (rect.width === 0) rect = document.getElementById('mapArea').getBoundingClientRect();
   
   canvas.width = rect.width * 2;
   canvas.height = rect.height * 2;
@@ -1265,116 +1131,6 @@ function drawMap() {
   }
 }
 
-function drawElevation() {
-  var canvas = document.getElementById('elevCanvas');
-  if (!canvas || trackPoints.length < 2) return;
-
-  var rect = canvas.parentElement.getBoundingClientRect();
-  if (rect.width === 0) rect = document.getElementById('bigMetric').getBoundingClientRect();
-
-  canvas.width  = rect.width  * 2;
-  canvas.height = rect.height * 2;
-
-  var ctx = canvas.getContext('2d');
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = '#0b1018';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  var padL = 72, padR = 24, padT = 36, padB = 44;
-  var cw = canvas.width, ch = canvas.height;
-  var W = cw - padL - padR;
-  var H = ch - padT  - padB;
-
-  var pts = [];
-  var cumDist = 0;
-  for (var i = 0; i < trackPoints.length; i++) {
-    if (i > 0) cumDist += haversine(trackPoints[i-1].lat, trackPoints[i-1].lon, trackPoints[i].lat, trackPoints[i].lon);
-    var ele = trackPoints[i].ele || 0;
-    pts.push({ d: cumDist, e: ele });
-  }
-
-  var minE = pts[0].e, maxE = pts[0].e;
-  for (var i = 1; i < pts.length; i++) {
-    if (pts[i].e < minE) minE = pts[i].e;
-    if (pts[i].e > maxE) maxE = pts[i].e;
-  }
-  var eleRange = maxE - minE || 1;
-  var eMin = minE - eleRange * 0.1;
-  var eMax = maxE + eleRange * 0.15;
-  var eSpan = eMax - eMin;
-  var totalDist = pts[pts.length - 1].d || 1;
-
-  function toCanvasX(d) { return padL + (d / totalDist) * W; }
-  function toCanvasY(e) { return padT + H - ((e - eMin) / eSpan) * H; }
-
-  var grad = ctx.createLinearGradient(0, padT, 0, padT + H);
-  grad.addColorStop(0,   'rgba(0,230,118,0.45)');
-  grad.addColorStop(1,   'rgba(0,230,118,0.03)');
-
-  ctx.beginPath();
-  ctx.moveTo(toCanvasX(pts[0].d), toCanvasY(pts[0].e));
-  for (var i = 1; i < pts.length; i++) {
-    ctx.lineTo(toCanvasX(pts[i].d), toCanvasY(pts[i].e));
-  }
-  ctx.lineTo(toCanvasX(pts[pts.length-1].d), padT + H);
-  ctx.lineTo(toCanvasX(pts[0].d), padT + H);
-  ctx.closePath();
-  ctx.fillStyle = grad;
-  ctx.fill();
-
-  ctx.beginPath();
-  ctx.lineWidth = 4;
-  ctx.strokeStyle = '#00e676';
-  ctx.lineJoin = 'round';
-  ctx.lineCap  = 'round';
-  ctx.moveTo(toCanvasX(pts[0].d), toCanvasY(pts[0].e));
-  for (var i = 1; i < pts.length; i++) {
-    ctx.lineTo(toCanvasX(pts[i].d), toCanvasY(pts[i].e));
-  }
-  ctx.stroke();
-
-  var lp = pts[pts.length - 1];
-  ctx.beginPath();
-  ctx.arc(toCanvasX(lp.d), toCanvasY(lp.e), 9, 0, 2 * Math.PI);
-  ctx.fillStyle = '#fff';
-  ctx.fill();
-  ctx.lineWidth = 3;
-  ctx.strokeStyle = '#000';
-  ctx.stroke();
-
-  ctx.font = '20px Courier New';
-  ctx.textAlign = 'right';
-  ctx.textBaseline = 'middle';
-  ctx.fillStyle = 'rgba(255,255,255,0.45)';
-  ctx.fillText(Math.round(maxE) + 'm', padL - 8, padT + 4);
-  ctx.fillText(Math.round(minE) + 'm', padL - 8, padT + H - 4);
-
-  var gain = 0;
-  for (var i = 1; i < trackPoints.length; i++) {
-    var diff = (trackPoints[i].ele || 0) - (trackPoints[i-1].ele || 0);
-    if (diff > 0) gain += diff;
-  }
-  ctx.textAlign = 'right';
-  ctx.textBaseline = 'top';
-  ctx.fillStyle = 'rgba(0,230,118,0.75)';
-  ctx.fillText('\u2191 ' + Math.round(gain) + 'm gain', cw - padR, padT);
-
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'bottom';
-  ctx.fillStyle = 'rgba(255,255,255,0.3)';
-  ctx.fillText((totalDist / 1000).toFixed(2) + ' km', padL + W / 2, ch - 4);
-
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'top';
-  ctx.fillStyle = 'rgba(255,255,255,0.25)';
-  ctx.font = '18px Courier New';
-  ctx.fillText('ELEVATION', padL, padT - 28);
-}
-
-renderControls();
-setStatus('', 'Ready. Press START to begin.');
-startGPS();
-
 var lockOverlay = document.getElementById('appLock');
 var unlockBtn = document.getElementById('unlockBtn');
 var unlockTimer = null;
@@ -1399,6 +1155,10 @@ unlockBtn.addEventListener('touchcancel', cancelUnlock);
 unlockBtn.addEventListener('mousedown', startUnlock);
 unlockBtn.addEventListener('mouseup', cancelUnlock);
 unlockBtn.addEventListener('mouseleave', cancelUnlock);
+
+renderControls();
+setStatus('', 'Ready. Press START to begin.');
+startGPS();
 
 if ('serviceWorker' in navigator) {
   var swCode = `
