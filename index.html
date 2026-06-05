@@ -551,7 +551,7 @@ var lastAnnouncedKm = 0;
 
 var autoSaveInterval = null;
 
-// IndexedDB Setup
+// IndexedDB Setup (Phase 2)
 var db;
 var request = indexedDB.open("GPSTrackerDB", 1);
 
@@ -648,7 +648,6 @@ function confirmRestore() {
   document.getElementById('distanceDisplay').textContent = (totalDistance / 1000).toFixed(2);
   document.getElementById('pointsDisplay').textContent   = trackPoints.length;
   document.getElementById('lapsHeader').style.display    = 'grid';
-  document.getElementById('wakeWarning').classList.add('show');
 
   pauseStart = Date.now();
   renderLaps();
@@ -662,6 +661,76 @@ function discardRestore() {
   pendingSnapshot = null;
   clearAutoSave();
 }
+
+// Screen Wake Lock API (Phase 4)
+var wakeLock = null;
+
+async function requestWakeLock() {
+  if ('wakeLock' in navigator) {
+    try {
+      wakeLock = await navigator.wakeLock.request('screen');
+      document.getElementById('wakeWarning').classList.remove('show');
+    } catch (err) {
+      document.getElementById('wakeWarning').classList.add('show');
+    }
+  } else {
+    document.getElementById('wakeWarning').classList.add('show');
+  }
+}
+
+function releaseWakeLock() {
+  if (wakeLock !== null) {
+    wakeLock.release().then(function() { wakeLock = null; });
+  }
+  document.getElementById('wakeWarning').classList.remove('show');
+}
+
+document.addEventListener('visibilitychange', function() {
+  if (wakeLock !== null && document.visibilityState === 'visible' && state === 'tracking') {
+    requestWakeLock();
+  }
+});
+
+// GPX Builder Web Worker (Phase 3)
+var workerCode = `
+self.onmessage = function(e) {
+  if (e.data.type === 'buildGPX') {
+    var pts = e.data.points;
+    var name = 'Run ' + new Date().toISOString().slice(0,10);
+    var gpxPts = pts.map(function(p) {
+      var timeStr = new Date(p.time).toISOString();
+      var ele = p.ele ? '\\n      <ele>' + p.ele.toFixed(1) + '</ele>' : '';
+      return '    <trkpt lat="' + p.lat.toFixed(7) + '" lon="' + p.lon.toFixed(7) + '">' + ele + '\\n      <time>' + timeStr + '</time>\\n    </trkpt>';
+    }).join('\\n');
+    
+    var xml = '<?xml version="1.0" encoding="UTF-8"?>\\n' +
+              '<gpx version="1.1" creator="GPS-Tracker-iPhone6"\\n' +
+              '  xmlns="http://www.topografix.com/GPX/1/1">\\n' +
+              '  <metadata>\\n' +
+              '    <name>' + name + '</name>\\n' +
+              '    <time>' + new Date().toISOString() + '</time>\\n' +
+              '  </metadata>\\n' +
+              '  <trk>\\n' +
+              '    <name>' + name + '</name>\\n' +
+              '    <trkseg>\\n' +
+              gpxPts + '\\n' +
+              '    </trkseg>\\n' +
+              '  </trk>\\n' +
+              '</gpx>';
+    self.postMessage({ type: 'gpxBuilt', xml: xml });
+  }
+};
+`;
+
+var workerBlob = new Blob([workerCode], {type: 'application/javascript'});
+var dataWorker = new Worker(URL.createObjectURL(workerBlob));
+
+dataWorker.onmessage = function(e) {
+  if (e.data.type === 'gpxBuilt') {
+    document.getElementById('gpxContent').textContent = e.data.xml;
+    document.getElementById('copyHint').textContent = '';
+  }
+};
 
 function toggleAudio() {
   audioEnabled = !audioEnabled;
@@ -791,7 +860,7 @@ function startTracking() {
     setStatus('ok', 'Tracking started.');
     startTimer();
     document.getElementById('bigMetric').classList.add('active');
-    document.getElementById('wakeWarning').classList.add('show');
+    requestWakeLock();
     document.getElementById('lapsHeader').style.display = 'grid';
     renderControls();
   } else if (state === 'paused') {
@@ -804,6 +873,7 @@ function startTracking() {
     startGPS(); 
     startTimer();
     document.getElementById('bigMetric').classList.add('active');
+    requestWakeLock();
     renderControls();
     setStatus('ok', 'Resumed.');
   }
@@ -821,6 +891,7 @@ function pauseTracking() {
   stopGPS();
   clearInterval(timerInterval);
   document.getElementById('bigMetric').classList.remove('active');
+  releaseWakeLock();
   renderControls();
   setStatus('', 'Paused.');
 }
@@ -837,7 +908,7 @@ function stopTracking() {
   stopGPS();
   clearInterval(timerInterval);
   document.getElementById('bigMetric').classList.remove('active');
-  document.getElementById('wakeWarning').classList.remove('show');
+  releaseWakeLock();
   renderControls();
   setStatus('ok', 'Done! ' + (totalDistance/1000).toFixed(2) + 'km \u2014 tap EXPORT GPX to save.');
 }
@@ -875,7 +946,7 @@ function resetAll() {
   document.getElementById('lapsList').innerHTML = '';
   document.getElementById('lapsHeader').style.display = 'none';
   document.getElementById('bigMetric').classList.remove('active');
-  document.getElementById('wakeWarning').classList.remove('show');
+  releaseWakeLock();
   renderControls();
   setGPS('no');
   
@@ -989,24 +1060,13 @@ function setStatus(type, msg) {
   bar.innerHTML = '<span>' + icon + '</span><span id="statusText">' + msg + '</span>';
 }
 
-function buildGPX() {
-  var name = 'Run ' + new Date().toISOString().slice(0,10);
-  var pts = trackPoints.map(function(p) {
-    var timeStr = p.time.toISOString();
-    var ele = p.ele ? '\n      <ele>' + p.ele.toFixed(1) + '</ele>' : '';
-    return '    <trkpt lat="' + p.lat.toFixed(7) + '" lon="' + p.lon.toFixed(7) + '">' + ele + '\n      <time>' + timeStr + '</time>\n    </trkpt>';
-  }).join('\n');
-
-  return '<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="GPS-Tracker-iPhone6"\n  xmlns="http://www.topografix.com/GPX/1/1">\n  <metadata>\n    <name>' + name + '</name>\n    <time>' + new Date().toISOString() + '</time>\n  </metadata>\n  <trk>\n    <name>' + name + '</name>\n    <trkseg>\n' + pts + '\n    </trkseg>\n  </trk>\n</gpx>';
-}
-
 function showExport() {
   if (trackPoints.length === 0) { alert('No GPS points recorded.'); return; }
-  var gpx = buildGPX();
-  
-  document.getElementById('gpxContent').textContent = gpx;
+  document.getElementById('gpxContent').textContent = 'Generating GPX...';
   document.getElementById('copyHint').textContent = '';
   document.getElementById('modal').classList.add('open');
+  
+  dataWorker.postMessage({ type: 'buildGPX', points: trackPoints });
 }
 
 function selectAllText() {
