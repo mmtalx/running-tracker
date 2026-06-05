@@ -1,12 +1,3 @@
-Here is the finalized codebase implementing all of the UI optimizations.
-### What changed in this version:
- 1. **Top Bar Deleted:** The .topbar container and "Running Tracker" title have been completely removed.
- 2. **Locked Indicator Deleted:** The HTML, CSS, and all JavaScript functions tied to the GPS dot/status have been purged.
- 3. **Floating SFX Button:** The audio toggle is now absolutely positioned in the top-right corner over the map canvas. Both the SFX button and the stats box utilize env(safe-area-inset-top) to ensure they automatically dodge the iPhone's hardware notch/status bar.
- 4. **Draggable Stats Box:** A physics-light touch event listener has been attached to the stats overlay. You can drag it anywhere on the screen without triggering a heavy canvas map redraw.
- 5. **GPS Points Restored:** The trackPoints.length variable is injected directly into the bottom of the stats overlay.
-Replace your entire index.html file with this code:
-```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -67,35 +58,85 @@ Replace your entire index.html file with this code:
     background: radial-gradient(ellipse 200% 40% at 50% 0%, rgba(0,230,118,0.04) 0%, var(--bg) 50%);
   }
 
-  .status-bar, .controls {
+  .topbar, .status-bar, .controls {
     flex-shrink: 0; 
   }
 
-  .audio-toggle {
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 13px 18px 11px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    position: relative;
+  }
+
+  .topbar::after {
+    content: '';
     position: absolute;
-    top: max(12px, env(safe-area-inset-top));
-    right: 14px;
-    z-index: 10;
+    bottom: -1px; left: 18px; right: 18px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent-glow), transparent);
+  }
+
+  .topbar-title {
     font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    color: var(--accent);
+    text-transform: uppercase;
+    text-shadow: 0 0 10px var(--accent-glow);
+  }
+
+  .top-controls {
+    display: flex;
+    align-items: center;
+  }
+  
+  .top-controls > * + * { margin-left: 10px; }
+
+  .audio-toggle {
+    font-size: 9px;
     font-family: inherit;
     font-weight: 700;
     letter-spacing: 2px;
     color: var(--text-dim);
     cursor: pointer;
-    padding: 6px 10px;
+    padding: 3px 7px;
     border: 1px solid var(--border2);
-    border-radius: 6px;
-    background: rgba(11, 16, 24, 0.85);
-    backdrop-filter: blur(4px);
+    border-radius: 3px;
+    background: transparent;
     transition: all 0.2s;
   }
   .audio-toggle.active {
     color: var(--accent);
     border-color: var(--accent-mid);
-    background: rgba(0, 230, 118, 0.15);
+    background: var(--accent-dim);
     text-shadow: 0 0 6px var(--accent-glow);
     box-shadow: 0 0 8px var(--accent-dim);
   }
+
+  .gps-indicator {
+    display: flex;
+    align-items: center;
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 1.5px;
+  }
+  .gps-indicator > * + * { margin-left: 5px; }
+
+  .gps-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--text-dim);
+    flex-shrink: 0;
+    transition: all 0.3s;
+  }
+  .gps-dot.acquiring { background: var(--warn); box-shadow: 0 0 6px var(--warn); animation: pulse 1s infinite; }
+  .gps-dot.locked { background: var(--accent); box-shadow: 0 0 8px var(--accent-glow); }
+
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.25} }
 
   .main-section {
     flex: 1 1 0%;
@@ -117,20 +158,13 @@ Replace your entire index.html file with this code:
 
   .stats-overlay {
     position: absolute;
-    top: max(12px, env(safe-area-inset-top));
-    left: 12px;
-    background: rgba(0,0,0,0.78);
-    border: 1px solid rgba(255,255,255,0.05);
-    border-radius: 8px;
-    padding: 12px 16px;
+    top: 10px; left: 10px;
+    background: rgba(0,0,0,0.72);
+    border-radius: 6px;
+    padding: 10px 14px;
     display: none;
-    z-index: 10;
-    touch-action: none;
-    cursor: grab;
-    backdrop-filter: blur(4px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    z-index: 2;
   }
-  .stats-overlay:active { cursor: grabbing; }
   .stats-overlay.active { display: block; }
 
   .overlay-stat {
@@ -139,7 +173,6 @@ Replace your entire index.html file with this code:
     font-weight: 700;
     font-variant-numeric: tabular-nums;
     line-height: 1.6;
-    pointer-events: none;
   }
   .overlay-unit { font-size: 12px; color: var(--text-mid); font-weight: 400; letter-spacing: 1px; }
 
@@ -268,17 +301,20 @@ Replace your entire index.html file with this code:
 <body>
 <div class="app">
 
+  <div class="topbar">
+    <div class="topbar-title">Running · Tracker</div>
+    <div class="top-controls">
+      <div class="audio-toggle active" id="audioToggle" onclick="toggleAudio()">SFX</div>
+    </div>
+  </div>
+
   <div class="main-section">
     <div class="map-area" id="mapArea">
       <canvas id="mapCanvas"></canvas>
-      
-      <div class="audio-toggle active" id="audioToggle" onclick="toggleAudio()">SFX</div>
-
       <div class="stats-overlay" id="statsOverlay">
         <div class="overlay-stat" id="distanceDisplay">0.00 <span class="overlay-unit">km</span></div>
         <div class="overlay-stat" id="timeDisplay">00:00</div>
         <div class="overlay-stat" id="paceDisplay">--:-- <span class="overlay-unit">/ km</span></div>
-        <div class="overlay-stat" id="pointsDisplay" style="margin-top: 4px; font-size: 13px;">0 <span class="overlay-unit">pts</span></div>
       </div>
     </div>
   </div>
@@ -434,7 +470,6 @@ function confirmRestore() {
   lastPosition  = trackPoints[trackPoints.length - 1] || null;
 
   document.getElementById('distanceDisplay').innerHTML = (totalDistance / 1000).toFixed(2) + ' <span class="overlay-unit">km</span>';
-  document.getElementById('pointsDisplay').innerHTML = trackPoints.length + ' <span class="overlay-unit">pts</span>';
   document.getElementById('statsOverlay').classList.add('active');
 
   pauseStart = Date.now();
@@ -585,7 +620,6 @@ function onPosition(pos) {
       lastPosition = { lat: lat, lon: lon, time: t };
       trackPoints.push({ lat: lat, lon: lon, ele: ele, time: t, speed: 0 });
       lastValidPointTime = Date.now();
-      document.getElementById('pointsDisplay').innerHTML = trackPoints.length + ' <span class="overlay-unit">pts</span>';
       clearWarnPulse();
       updateUI();
       drawMap();
@@ -599,7 +633,6 @@ function onPosition(pos) {
         currentSpeed = (spd && spd > 0) ? spd : calcSpeed;
         trackPoints.push({ lat: lat, lon: lon, ele: ele, time: t, speed: currentSpeed });
         lastValidPointTime = Date.now();
-        document.getElementById('pointsDisplay').innerHTML = trackPoints.length + ' <span class="overlay-unit">pts</span>';
         clearWarnPulse();
         lastPosition = { lat: lat, lon: lon, time: t };
         updateUI();
@@ -706,7 +739,6 @@ function resetAll() {
   document.getElementById('distanceDisplay').innerHTML = '0.00 <span class="overlay-unit">km</span>';
   document.getElementById('timeDisplay').textContent = '00:00';
   document.getElementById('paceDisplay').innerHTML = '--:-- <span class="overlay-unit">/ km</span>';
-  document.getElementById('pointsDisplay').innerHTML = '0 <span class="overlay-unit">pts</span>';
   releaseWakeLock();
   renderControls();
   
@@ -999,59 +1031,6 @@ function drawMap() {
   }
 }
 
-// Drag logic for the stats overlay
-var dragItem = document.getElementById("statsOverlay");
-var dragActive = false;
-var currentX, currentY, initialX, initialY;
-var xOffset = 0, yOffset = 0;
-
-dragItem.addEventListener("touchstart", dragStart, {passive: false});
-document.addEventListener("touchend", dragEnd, {passive: false});
-document.addEventListener("touchmove", drag, {passive: false});
-
-dragItem.addEventListener("mousedown", dragStart, false);
-document.addEventListener("mouseup", dragEnd, false);
-document.addEventListener("mousemove", drag, false);
-
-function dragStart(e) {
-  if (e.type === "touchstart") {
-    initialX = e.touches[0].clientX - xOffset;
-    initialY = e.touches[0].clientY - yOffset;
-  } else {
-    initialX = e.clientX - xOffset;
-    initialY = e.clientY - yOffset;
-  }
-  if (e.target === dragItem || dragItem.contains(e.target)) {
-    dragActive = true;
-  }
-}
-
-function dragEnd(e) {
-  initialX = currentX;
-  initialY = currentY;
-  dragActive = false;
-}
-
-function drag(e) {
-  if (dragActive) {
-    e.preventDefault(); 
-    if (e.type === "touchmove") {
-      currentX = e.touches[0].clientX - initialX;
-      currentY = e.touches[0].clientY - initialY;
-    } else {
-      currentX = e.clientX - initialX;
-      currentY = e.clientY - initialY;
-    }
-    xOffset = currentX;
-    yOffset = currentY;
-    setTranslate(currentX, currentY, dragItem);
-  }
-}
-
-function setTranslate(xPos, yPos, el) {
-  el.style.transform = "translate3d(" + xPos + "px, " + yPos + "px, 0)";
-}
-
 var lockOverlay = document.getElementById('appLock');
 var unlockBtn = document.getElementById('unlockBtn');
 var unlockTimer = null;
@@ -1109,5 +1088,3 @@ self.addEventListener('fetch', function(e) {
 </script>
 </body>
 </html>
-
-```
