@@ -5,9 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#06090d">
-<link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <title>Running Tracker</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&display=swap');
@@ -789,7 +786,7 @@ function clearWarnPulse() {
 function renderControls() {
   var c = document.getElementById('controls');
   if (state === 'idle') {
-    c.innerHTML = '<div style="width: 100%; display: flex; flex-direction: column; gap: 12px;"><button class="btn btn-start" id="btnStart" onclick="startTracking()" disabled style="width: 100%; padding: 18px 10px;">START</button></div>';
+    c.innerHTML = '<div style="width: 100%; display: flex; flex-direction: column; gap: 12px;"><button class="btn btn-start" id="btnStart" onclick="startGPS()" style="width: 100%; padding: 18px 10px;">CONNECT GPS</button></div>';
   } else if (state === 'tracking') {
     c.innerHTML = '<button class="btn btn-lock" onclick="activateLock()">LOCK</button><button class="btn btn-pause" onclick="pauseTracking()">PAUSE</button><button class="btn btn-stop" onclick="stopTracking()">STOP</button>';
   } else if (state === 'paused') {
@@ -846,10 +843,14 @@ function updateGPSReadiness(acc) {
 
   if (acc <= 90) {
     btn.disabled = false;
+    btn.textContent = 'START';
+    btn.onclick = startTracking;
     btn.style.opacity = '1';
     btn.style.boxShadow = '0 4px 18px rgba(0,230,118,0.3), 0 0 0 1px rgba(0,230,118,0.2)';
   } else {
     btn.disabled = true;
+    btn.textContent = 'CONNECT GPS';
+    btn.onclick = null;
     btn.style.opacity = '0.35';
     btn.style.boxShadow = 'none';
   }
@@ -1072,8 +1073,7 @@ unlockBtn.addEventListener('mouseup', cancelUnlock);
 unlockBtn.addEventListener('mouseleave', cancelUnlock);
 
 renderControls();
-setStatus('', 'Ready. Press START to begin.');
-startGPS();
+setStatus('', 'Tap CONNECT GPS to begin.');
 
 if ('serviceWorker' in navigator) {
   var swCode = `
